@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "shiba",
+  "version": "${version}",
+  "name": "Shiba",
+  "description": "Mod tien ich client-side cho Minecraft 1.21.1",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.example.shiba.ShibaClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
