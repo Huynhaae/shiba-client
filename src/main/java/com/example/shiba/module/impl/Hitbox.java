@@ -1,5 +1,6 @@
 package com.example.shiba.module.impl;
 
+import com.example.shiba.module.Category;
 import com.example.shiba.module.Module;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -19,7 +20,7 @@ public class Hitbox extends Module {
     public boolean renderOutline = true;
 
     public Hitbox() {
-        super("Hitbox", "Mở rộng hitbox của entity để dễ trúng đòn hơn.");
+        super("Hitbox", "Mở rộng hitbox của entity để dễ trúng đòn hơn.", Category.COMBAT);
     }
 
     @Override
