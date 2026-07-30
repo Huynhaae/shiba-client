@@ -52,6 +52,7 @@ public class ShibaClient implements ClientModInitializer {
                 context.drawTextWithShadow(mc.textRenderer,
                         mc.getCurrentFps() + " FPS", 4, y, 0xFFFFFF);
             }
+            ModuleManager.CRIT.render(context);
         });
     }
 }
