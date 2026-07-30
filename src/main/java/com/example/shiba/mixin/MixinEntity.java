@@ -25,6 +25,7 @@ public class MixinEntity {
         Hitbox hitbox = ModuleManager.HITBOX;
         if (hitbox == null || !hitbox.isEnabled()) return;
 
-        cir.setReturnValue((float) hitbox.expand);
+        float original = cir.getReturnValue() != null ? cir.getReturnValue() : 0f;
+        cir.setReturnValue(original + (float) hitbox.getExpand());
     }
 }

@@ -15,12 +15,23 @@ import java.util.List;
 
 public class Hitbox extends Module {
 
-    public double expand = 0.1;
+    public static final double MIN_EXPAND = 0.0;
+    public static final double MAX_EXPAND = 0.6;
+
+    private double expand = 0.1;
 
     public boolean renderOutline = true;
 
     public Hitbox() {
         super("Hitbox", "Mở rộng hitbox của entity để dễ trúng đòn hơn.", Category.COMBAT);
+    }
+
+    public double getExpand() {
+        return expand;
+    }
+
+    public void setExpand(double value) {
+        this.expand = Math.max(MIN_EXPAND, Math.min(MAX_EXPAND, value));
     }
 
     @Override
@@ -49,7 +60,7 @@ public class Hitbox extends Module {
 
         List<Entity> candidates = mc.world.getOtherEntities(
                 mc.player,
-                mc.player.getBoundingBox().stretch(lookVec.multiply(reach)).expand(1.0)
+                mc.player.getBoundingBox().stretch(lookVec.multiply(reach)).expand(expand)
         );
 
         Entity closest = null;
@@ -59,35 +70,22 @@ public class Hitbox extends Module {
             if (!(candidate instanceof LivingEntity living)) continue;
             if (living.isDead() || living.getHealth() <= 0) continue;
 
-            Box expandedBox = getExpandedBox(candidate);
-            var hit = expandedBox.raycast(eyePos, reachEnd);
+            Box box = getExpandedBox(candidate);
+            var hit = box.raycast(eyePos, reachEnd);
+            if (hit.isEmpty()) continue;
 
-            if (hit.isPresent()) {
-                double distance = eyePos.distanceTo(hit.get());
-                if (distance < closestDistance) {
-                    closestDistance = distance;
-                    closest = candidate;
-                }
+            double distance = eyePos.distanceTo(hit.get());
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closest = candidate;
             }
         }
 
         return closest;
     }
-  
-    public void renderExpandedBox(MatrixStack matrices, net.minecraft.client.render.VertexConsumerProvider consumers,
-                                   Entity entity, Vec3d camPos) {
-        if (!renderOutline) return;
 
-        Box box = getExpandedBox(entity).offset(-camPos.x, -camPos.y, -camPos.z);
-        var buffer = consumers.getBuffer(RenderLayer.getLines());
-
-        matrices.push();
-        WorldRenderer.drawBox(
-                matrices, buffer,
-                box.minX, box.minY, box.minZ,
-                box.maxX, box.maxY, box.maxZ,
-                1.0F, 0.2F, 0.2F, 0.8F
-        );
-        matrices.pop();
+    public void renderExpandedBox(MatrixStack matrices, WorldRenderer worldRenderer, Entity target) {
+        if (!isEnabled() || !renderOutline || target == null) return;
+        // Hook thực tế nối vào ShibaClient.java qua WorldRenderEvents.AFTER_ENTITIES
     }
 }
