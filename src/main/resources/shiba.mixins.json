@@ -3,7 +3,8 @@
   "package": "com.example.shiba.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "MixinEntity"
+    "MixinEntity",
+    "MixinPlayerEntity"
   ],
   "injectors": {
     "defaultRequire": 1

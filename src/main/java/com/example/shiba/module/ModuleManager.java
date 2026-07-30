@@ -4,6 +4,7 @@ import com.example.shiba.module.impl.CoordsHud;
 import com.example.shiba.module.impl.FpsHud;
 import com.example.shiba.module.impl.Zoom;
 import com.example.shiba.module.impl.Hitbox;
+import com.example.shiba.module.impl.Reach;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,7 @@ public final class ModuleManager {
     public static final FpsHud FPS = register(new FpsHud());
     public static final Zoom ZOOM = register(new Zoom());
     public static final Hitbox HITBOX = register(new Hitbox());
+    public static final Reach REACH = register(new Reach());
 
     private ModuleManager() {}
 
