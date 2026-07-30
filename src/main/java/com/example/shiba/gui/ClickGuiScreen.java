@@ -1,134 +1,233 @@
 package com.example.shiba.gui;
 
-import com.example.shiba.ShibaClient;
-import com.example.shiba.config.ConfigManager;
+import com.example.shiba.module.Category;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
-import com.example.shiba.module.impl.Reach;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.text.Text;
-import org.lwjgl.glfw.GLFW;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClickGuiScreen extends Screen {
 
-    private static final int PANEL_WIDTH = 210;
-    private static final int ROW_HEIGHT = 22;
-    private static final int SLIDER_HEIGHT = 18;
-    private static final int SPACING = 4;
-    private static final int PADDING = 8;
-    private static final int HEADER_HEIGHT = 28;
+    private static final int PANEL_WIDTH = 120;
+    private static final int TAB_HEIGHT = 24;
+    private static final int MODULE_HEIGHT = 20;
+    private static final int SLIDER_HEIGHT = 14;
+    private static final int PANEL_GAP = 6;
 
-    private static final int COLOR_PANEL_BG = 0xE6161618;
-    private static final int COLOR_PANEL_BORDER = 0xFF2A2A30;
-    private static final int COLOR_HEADER = 0xFF7C5CFF;
+    private static final int COLOR_BG = 0xCC101014;
+    private static final int COLOR_TAB = 0xFF1A1A22;
+    private static final int COLOR_TAB_ACTIVE = 0xFF3A6FE0;
+    private static final int COLOR_MODULE_OFF = 0xFF1E1E28;
+    private static final int COLOR_MODULE_ON = 0xFF2E7D46;
+    private static final int COLOR_SLIDER_BG = 0xFF14141C;
+    private static final int COLOR_SLIDER_FILL = 0xFF3A6FE0;
+    private static final int COLOR_BORDER = 0xFF34344A;
+    private static final int COLOR_TEXT = 0xFFE8E8F0;
 
-    private int panelX;
-    private int panelY;
+    private final Map<Category, List<Module>> categorized = new EnumMap<>(Category.class);
+    private Category activeCategory = Category.COMBAT;
+
+    private int guiX = 40;
+    private int guiY = 40;
+    private boolean dragging = false;
+    private int dragOffsetX, dragOffsetY;
+
+    private boolean draggingSlider = false;
 
     public ClickGuiScreen() {
-        super(Text.literal(ShibaClient.MOD_NAME));
+        super(Text.literal("Shiba ClickGUI"));
     }
 
     @Override
     protected void init() {
-        panelX = this.width / 2 - PANEL_WIDTH / 2;
-        panelY = 40;
+        categorized.clear();
+        for (Category c : Category.values()) {
+            categorized.put(c, new ArrayList<>());
+        }
+        for (Module m : ModuleManager.getModules()) {
+            categorized.get(m.getCategory()).add(m);
+        }
+    }
 
-        int y = panelY + HEADER_HEIGHT + PADDING;
+    @Override
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        this.renderBackground(ctx, mouseX, mouseY, delta);
 
-        for (Module module : ModuleManager.getModules()) {
-            int rowX = panelX + PADDING;
-            int rowW = PANEL_WIDTH - PADDING * 2;
-            final int finalY = y;
+        int panelHeight = tabBarHeight() + PANEL_GAP + moduleListHeight();
+        ctx.fill(guiX, guiY, guiX + PANEL_WIDTH, guiY + panelHeight, COLOR_BG);
+        ctx.drawBorder(guiX, guiY, PANEL_WIDTH, panelHeight, COLOR_BORDER);
 
-            ButtonWidget button = ButtonWidget.builder(labelFor(module), btn -> {
-                module.toggle();
-                btn.setMessage(labelFor(module));
-                ConfigManager.save();
-            }).dimensions(rowX, finalY, rowW, ROW_HEIGHT).build();
+        renderTabs(ctx, mouseX, mouseY);
+        renderModules(ctx, mouseX, mouseY);
 
-            this.addDrawableChild(button);
-            y += ROW_HEIGHT + SPACING;
+        super.render(ctx, mouseX, mouseY, delta);
+    }
 
-            if (module instanceof Hitbox hitbox) {
-                ValueSlider expandSlider = new ValueSlider(
-                        rowX, y, rowW, SLIDER_HEIGHT,
-                        hitbox.expand, 1.0,
-                        v -> hitbox.expand = v,
-                        v -> "Expand: " + String.format("%.2f", v)
-                );
-                this.addDrawableChild(expandSlider);
-                y += SLIDER_HEIGHT + SPACING;
+    private int tabBarHeight() {
+        return Category.values().length * TAB_HEIGHT;
+    }
 
-                ButtonWidget renderToggle = ButtonWidget.builder(
-                        renderLabelFor(hitbox),
-                        btn -> {
-                            hitbox.renderOutline = !hitbox.renderOutline;
-                            btn.setMessage(renderLabelFor(hitbox));
-                            ConfigManager.save();
-                        }
-                ).dimensions(rowX, y, rowW, ROW_HEIGHT - 2).build();
+    private int rowHeight(Module m) {
+        return (m instanceof Hitbox hb && hb.isEnabled()) ? MODULE_HEIGHT + SLIDER_HEIGHT : MODULE_HEIGHT;
+    }
 
-                this.addDrawableChild(renderToggle);
-                y += (ROW_HEIGHT - 2) + SPACING;
+    private int moduleListHeight() {
+        List<Module> mods = categorized.get(activeCategory);
+        if (mods.isEmpty()) return MODULE_HEIGHT;
+        int total = 0;
+        for (Module m : mods) total += rowHeight(m);
+        return total;
+    }
+
+    private void renderTabs(DrawContext ctx, int mouseX, int mouseY) {
+        Category[] cats = Category.values();
+        for (int i = 0; i < cats.length; i++) {
+            Category c = cats[i];
+            int tabY = guiY + i * TAB_HEIGHT;
+            boolean active = c == activeCategory;
+            boolean hovered = isInside(mouseX, mouseY, guiX, tabY, PANEL_WIDTH, TAB_HEIGHT);
+
+            int color = active ? COLOR_TAB_ACTIVE : (hovered ? 0xFF25253A : COLOR_TAB);
+            ctx.fill(guiX, tabY, guiX + PANEL_WIDTH, tabY + TAB_HEIGHT, color);
+            ctx.drawText(this.textRenderer, Text.literal(c.name()),
+                    guiX + 6, tabY + (TAB_HEIGHT - 8) / 2, COLOR_TEXT, false);
+        }
+    }
+
+    private void renderModules(DrawContext ctx, int mouseX, int mouseY) {
+        List<Module> mods = categorized.get(activeCategory);
+        int listY = guiY + tabBarHeight() + PANEL_GAP;
+
+        if (mods.isEmpty()) {
+            ctx.drawText(this.textRenderer, Text.literal("(empty)"),
+                    guiX + 6, listY + 4, 0xFF888899, false);
+            return;
+        }
+
+        int rowY = listY;
+        for (Module m : mods) {
+            boolean hovered = isInside(mouseX, mouseY, guiX, rowY, PANEL_WIDTH, MODULE_HEIGHT);
+            int color = m.isEnabled() ? COLOR_MODULE_ON : (hovered ? 0xFF28283A : COLOR_MODULE_OFF);
+
+            ctx.fill(guiX, rowY, guiX + PANEL_WIDTH, rowY + MODULE_HEIGHT - 1, color);
+            ctx.drawText(this.textRenderer, Text.literal(m.getName()),
+                    guiX + 6, rowY + (MODULE_HEIGHT - 8) / 2, COLOR_TEXT, false);
+
+            if (m instanceof Hitbox hb && hb.isEnabled()) {
+                int sliderY = rowY + MODULE_HEIGHT;
+                renderExpandSlider(ctx, hb, sliderY);
             }
 
-            if (module instanceof Reach reach) {
-                ValueSlider reachSlider = new ValueSlider(
-                        rowX, y, rowW, SLIDER_HEIGHT,
-                        reach.reach, 6.0,
-                        v -> reach.reach = v,
-                        v -> "Reach: " + String.format("%.2f", v)
-                );
-                this.addDrawableChild(reachSlider);
-                y += SLIDER_HEIGHT + SPACING;
+            rowY += rowHeight(m);
+        }
+    }
+
+    private void renderExpandSlider(DrawContext ctx, Hitbox hb, int sliderY) {
+        ctx.fill(guiX, sliderY, guiX + PANEL_WIDTH, sliderY + SLIDER_HEIGHT - 1, COLOR_SLIDER_BG);
+
+        double ratio = (hb.getExpand() - Hitbox.MIN_EXPAND) / (Hitbox.MAX_EXPAND - Hitbox.MIN_EXPAND);
+        int fillWidth = (int) (PANEL_WIDTH * ratio);
+        ctx.fill(guiX, sliderY, guiX + fillWidth, sliderY + SLIDER_HEIGHT - 1, COLOR_SLIDER_FILL);
+
+        String label = String.format("expand: %.2f", hb.getExpand());
+        ctx.drawText(this.textRenderer, Text.literal(label),
+                guiX + 4, sliderY + 2, COLOR_TEXT, false);
+    }
+
+    private boolean isOverExpandSlider(double mouseX, double mouseY, int[] outSliderY) {
+        List<Module> mods = categorized.get(activeCategory);
+        int rowY = guiY + tabBarHeight() + PANEL_GAP;
+
+        for (Module m : mods) {
+            if (m instanceof Hitbox hb && hb.isEnabled()) {
+                int sliderY = rowY + MODULE_HEIGHT;
+                if (isInside(mouseX, mouseY, guiX, sliderY, PANEL_WIDTH, SLIDER_HEIGHT)) {
+                    outSliderY[0] = sliderY;
+                    return true;
+                }
+            }
+            rowY += rowHeight(m);
+        }
+        return false;
+    }
+
+    private void applyExpandFromMouse(double mouseX) {
+        List<Module> mods = categorized.get(activeCategory);
+        for (Module m : mods) {
+            if (m instanceof Hitbox hb && hb.isEnabled()) {
+                double ratio = (mouseX - guiX) / (double) PANEL_WIDTH;
+                ratio = Math.max(0.0, Math.min(1.0, ratio));
+                double value = Hitbox.MIN_EXPAND + ratio * (Hitbox.MAX_EXPAND - Hitbox.MIN_EXPAND);
+                hb.setExpand(value);
+                return;
             }
         }
     }
 
-    private Text labelFor(Module module) {
-        String state = module.isEnabled() ? "ON" : "OFF";
-        return Text.literal(module.getName() + "  ·  " + state);
-    }
-
-    private Text renderLabelFor(Hitbox hitbox) {
-        return Text.literal("Render Outline: " + (hitbox.renderOutline ? "ON" : "OFF"));
-    }
-
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        int totalHeight = HEADER_HEIGHT + PADDING;
-        for (Module module : ModuleManager.getModules()) {
-            totalHeight += ROW_HEIGHT + SPACING;
-            if (module instanceof Hitbox) {
-                totalHeight += SLIDER_HEIGHT + SPACING;
-                totalHeight += (ROW_HEIGHT - 2) + SPACING;
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            int[] sliderY = new int[1];
+            if (isOverExpandSlider(mouseX, mouseY, sliderY)) {
+                draggingSlider = true;
+                applyExpandFromMouse(mouseX);
+                return true;
             }
-            if (module instanceof Reach) {
-                totalHeight += SLIDER_HEIGHT + SPACING;
+
+            if (isInside(mouseX, mouseY, guiX, guiY, PANEL_WIDTH, TAB_HEIGHT)) {
+                dragging = true;
+                dragOffsetX = (int) mouseX - guiX;
+                dragOffsetY = (int) mouseY - guiY;
+            }
+
+            Category[] cats = Category.values();
+            for (int i = 0; i < cats.length; i++) {
+                int tabY = guiY + i * TAB_HEIGHT;
+                if (isInside(mouseX, mouseY, guiX, tabY, PANEL_WIDTH, TAB_HEIGHT)) {
+                    activeCategory = cats[i];
+                    return true;
+                }
+            }
+
+            List<Module> mods = categorized.get(activeCategory);
+            int rowY = guiY + tabBarHeight() + PANEL_GAP;
+            for (Module m : mods) {
+                if (isInside(mouseX, mouseY, guiX, rowY, PANEL_WIDTH, MODULE_HEIGHT)) {
+                    m.toggle();
+                    return true;
+                }
+                rowY += rowHeight(m);
             }
         }
-
-        context.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + totalHeight + 1, COLOR_PANEL_BORDER);
-        context.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + totalHeight, COLOR_PANEL_BG);
-        context.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + HEADER_HEIGHT, COLOR_HEADER);
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title,
-                panelX + PANEL_WIDTH / 2, panelY + 10, 0xFFFFFFFF);
-
-        super.render(context, mouseX, mouseY, delta);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT || keyCode == GLFW.GLFW_KEY_G) {
-            this.close();
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (draggingSlider) {
+            applyExpandFromMouse(mouseX);
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        if (dragging) {
+            guiX = (int) mouseX - dragOffsetX;
+            guiY = (int) mouseY - dragOffsetY;
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        dragging = false;
+        draggingSlider = false;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
@@ -136,30 +235,7 @@ public class ClickGuiScreen extends Screen {
         return false;
     }
 
-    private static class ValueSlider extends SliderWidget {
-        private final double max;
-        private final java.util.function.DoubleConsumer setter;
-        private final java.util.function.DoubleFunction<String> label;
-
-        public ValueSlider(int x, int y, int width, int height,
-                            double current, double max,
-                            java.util.function.DoubleConsumer setter,
-                            java.util.function.DoubleFunction<String> label) {
-            super(x, y, width, height, Text.literal(""), current / max);
-            this.max = max;
-            this.setter = setter;
-            this.label = label;
-            updateMessage();
-        }
-
-        @Override
-        protected void updateMessage() {
-            this.setMessage(Text.literal(label.apply(this.value * max)));
-        }
-
-        @Override
-        protected void applyValue() {
-            setter.accept(this.value * max);
-        }
+    private boolean isInside(double mx, double my, int x, int y, int w, int h) {
+        return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 }
