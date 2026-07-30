@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinEntity {
     @Inject(method = "getTargetingMargin", at = @At("HEAD"), cancellable = true)
     private void onGetTargetingMargin(CallbackInfoReturnable<Float> cir) {
-        Hitbox hitbox = (Hitbox) ModuleManager.getModuleByName("Hitbox");
+        Hitbox hitbox = (Hitbox) ModuleManager.getByName("Hitbox");
         if (hitbox != null && hitbox.isEnabled()) {
             cir.setReturnValue(Hitbox.expand);
         }
