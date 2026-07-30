@@ -16,7 +16,7 @@ import java.util.List;
 public class Hitbox extends Module {
 
     public static final double MIN_EXPAND = 0.0;
-    public static final double MAX_EXPAND = 0.6;
+    public static final double MAX_EXPAND = 20.0;
 
     private double expand = 0.1;
 
