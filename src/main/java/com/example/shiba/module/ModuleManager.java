@@ -1,5 +1,6 @@
 package com.example.shiba.module;
 
+import com.example.shiba.module.impl.CritDisplay;
 import com.example.shiba.module.impl.CoordsHud;
 import com.example.shiba.module.impl.FpsHud;
 import com.example.shiba.module.impl.Zoom;
