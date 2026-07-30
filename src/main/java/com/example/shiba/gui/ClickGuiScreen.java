@@ -1,81 +1,165 @@
 package com.example.shiba.gui;
 
-import com.example.shiba.module.ModuleManager;
+import com.example.shiba.ShibaClient;
+import com.example.shiba.config.ConfigManager;
 import com.example.shiba.module.Module;
+import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
+import com.example.shiba.module.impl.Reach;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.text.Text;
+import org.lwjgl.glfw.GLFW;
 
 public class ClickGuiScreen extends Screen {
+
+    private static final int PANEL_WIDTH = 210;
+    private static final int ROW_HEIGHT = 22;
+    private static final int SLIDER_HEIGHT = 18;
+    private static final int SPACING = 4;
+    private static final int PADDING = 8;
+    private static final int HEADER_HEIGHT = 28;
+
+    private static final int COLOR_PANEL_BG = 0xE6161618;
+    private static final int COLOR_PANEL_BORDER = 0xFF2A2A30;
+    private static final int COLOR_HEADER = 0xFF7C5CFF;
+
+    private int panelX;
+    private int panelY;
+
     public ClickGuiScreen() {
-        super(Text.literal("Shiba Client GUI"));
+        super(Text.literal(ShibaClient.MOD_NAME));
+    }
+
+    @Override
+    protected void init() {
+        panelX = this.width / 2 - PANEL_WIDTH / 2;
+        panelY = 40;
+
+        int y = panelY + HEADER_HEIGHT + PADDING;
+
+        for (Module module : ModuleManager.getModules()) {
+            int rowX = panelX + PADDING;
+            int rowW = PANEL_WIDTH - PADDING * 2;
+            final int finalY = y;
+
+            ButtonWidget button = ButtonWidget.builder(labelFor(module), btn -> {
+                module.toggle();
+                btn.setMessage(labelFor(module));
+                ConfigManager.save();
+            }).dimensions(rowX, finalY, rowW, ROW_HEIGHT).build();
+
+            this.addDrawableChild(button);
+            y += ROW_HEIGHT + SPACING;
+
+            if (module instanceof Hitbox hitbox) {
+                ValueSlider expandSlider = new ValueSlider(
+                        rowX, y, rowW, SLIDER_HEIGHT,
+                        hitbox.expand, 1.0,
+                        v -> hitbox.expand = v,
+                        v -> "Expand: " + String.format("%.2f", v)
+                );
+                this.addDrawableChild(expandSlider);
+                y += SLIDER_HEIGHT + SPACING;
+
+                ButtonWidget renderToggle = ButtonWidget.builder(
+                        renderLabelFor(hitbox),
+                        btn -> {
+                            hitbox.renderOutline = !hitbox.renderOutline;
+                            btn.setMessage(renderLabelFor(hitbox));
+                            ConfigManager.save();
+                        }
+                ).dimensions(rowX, y, rowW, ROW_HEIGHT - 2).build();
+
+                this.addDrawableChild(renderToggle);
+                y += (ROW_HEIGHT - 2) + SPACING;
+            }
+
+            if (module instanceof Reach reach) {
+                ValueSlider reachSlider = new ValueSlider(
+                        rowX, y, rowW, SLIDER_HEIGHT,
+                        reach.reach, 6.0,
+                        v -> reach.reach = v,
+                        v -> "Reach: " + String.format("%.2f", v)
+                );
+                this.addDrawableChild(reachSlider);
+                y += SLIDER_HEIGHT + SPACING;
+            }
+        }
+    }
+
+    private Text labelFor(Module module) {
+        String state = module.isEnabled() ? "ON" : "OFF";
+        return Text.literal(module.getName() + "  ·  " + state);
+    }
+
+    private Text renderLabelFor(Hitbox hitbox) {
+        return Text.literal("Render Outline: " + (hitbox.renderOutline ? "ON" : "OFF"));
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        int totalHeight = HEADER_HEIGHT + PADDING;
+        for (Module module : ModuleManager.getModules()) {
+            totalHeight += ROW_HEIGHT + SPACING;
+            if (module instanceof Hitbox) {
+                totalHeight += SLIDER_HEIGHT + SPACING;
+                totalHeight += (ROW_HEIGHT - 2) + SPACING;
+            }
+            if (module instanceof Reach) {
+                totalHeight += SLIDER_HEIGHT + SPACING;
+            }
+        }
+
+        context.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + totalHeight + 1, COLOR_PANEL_BORDER);
+        context.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + totalHeight, COLOR_PANEL_BG);
+        context.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + HEADER_HEIGHT, COLOR_HEADER);
+        context.drawCenteredTextWithShadow(this.textRenderer, this.title,
+                panelX + PANEL_WIDTH / 2, panelY + 10, 0xFFFFFFFF);
+
         super.render(context, mouseX, mouseY, delta);
-        int y = 40;
-        
-        for (Module module : ModuleManager.getModules()) {
-            context.fill(50, y, 150, y + 15, module.isEnabled() ? 0xFF00AA00 : 0xFFAA0000);
-            context.drawText(this.client.textRenderer, module.getName(), 55, y + 4, 0xFFFFFFFF, false);
-            
-            if (module.getName().equals("Hitbox") && module.isEnabled()) {
-                int sX = 50, sY = y + 15;
-                context.fill(sX, sY, sX + 100, sY + 10, 0xFF555555);
-                
-                float percent = (Hitbox.expand - Hitbox.MIN_EXPAND) / (Hitbox.MAX_EXPAND - Hitbox.MIN_EXPAND);
-                context.fill(sX, sY, sX + (int)(100 * percent), sY + 10, 0xFFAAAAFF);
-                context.drawText(this.client.textRenderer, "Expand: " + String.format("%.2f", Hitbox.expand), sX + 2, sY + 1, 0xFFFFFFFF, false);
-                y += 10; 
-            }
-            y += 20;
-        }
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int y = 40;
-        for (Module module : ModuleManager.getModules()) {
-            if (mouseX >= 50 && mouseX <= 150 && mouseY >= y && mouseY <= y + 15) {
-                module.toggle();
-                return true;
-            }
-            if (module.getName().equals("Hitbox") && module.isEnabled()) {
-                int sX = 50, sY = y + 15;
-                if (mouseX >= sX && mouseX <= sX + 100 && mouseY >= sY && mouseY <= sY + 10) {
-                    updateHitboxSlider(mouseX, sX);
-                    return true;
-                }
-                y += 10;
-            }
-            y += 20;
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT || keyCode == GLFW.GLFW_KEY_G) {
+            this.close();
+            return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        int y = 40;
-        for (Module module : ModuleManager.getModules()) {
-            if (module.getName().equals("Hitbox") && module.isEnabled()) {
-                int sX = 50, sY = y + 15;
-                if (mouseX >= sX && mouseX <= sX + 100 && mouseY >= sY && mouseY <= sY + 10) {
-                    updateHitboxSlider(mouseX, sX);
-                    return true;
-                }
-                y += 10;
-            }
-            y += 20;
-        }
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    public boolean shouldPause() {
+        return false;
     }
 
-    private void updateHitboxSlider(double mouseX, int sX) {
-        float percent = (float) (mouseX - sX) / 100.0f;
-        Hitbox.expand = Hitbox.MIN_EXPAND + percent * (Hitbox.MAX_EXPAND - Hitbox.MIN_EXPAND);
-        if (Hitbox.expand < Hitbox.MIN_EXPAND) Hitbox.expand = Hitbox.MIN_EXPAND;
-        if (Hitbox.expand > Hitbox.MAX_EXPAND) Hitbox.expand = Hitbox.MAX_EXPAND;
+    private static class ValueSlider extends SliderWidget {
+        private final double max;
+        private final java.util.function.DoubleConsumer setter;
+        private final java.util.function.DoubleFunction<String> label;
+
+        public ValueSlider(int x, int y, int width, int height,
+                            double current, double max,
+                            java.util.function.DoubleConsumer setter,
+                            java.util.function.DoubleFunction<String> label) {
+            super(x, y, width, height, Text.literal(""), current / max);
+            this.max = max;
+            this.setter = setter;
+            this.label = label;
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            this.setMessage(Text.literal(label.apply(this.value * max)));
+        }
+
+        @Override
+        protected void applyValue() {
+            setter.accept(this.value * max);
+        }
     }
 }
