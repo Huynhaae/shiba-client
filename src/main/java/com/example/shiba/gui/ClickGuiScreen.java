@@ -1,4 +1,3 @@
-cat > src/main/java/com/example/shiba/gui/ClickGuiScreen.java << 'EOF'
 package com.example.shiba.gui;
 
 import com.example.shiba.ShibaClient;
@@ -142,4 +141,3 @@ public class ClickGuiScreen extends Screen {
         }
     }
 }
-EOF
