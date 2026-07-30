@@ -1,6 +1,6 @@
 package com.example.shiba.gui;
 
-import com.example.shiba.ShibaClient;
+import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.impl.Hitbox;
 import net.minecraft.client.gui.DrawContext;
@@ -17,12 +17,10 @@ public class ClickGuiScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
         int y = 40;
         
-        for (Module module : ShibaClient.moduleManager.getModules()) {
-            // Sửa isToggled() thành isEnabled()
+        for (Module module : ModuleManager.getModules()) {
             context.fill(50, y, 150, y + 15, module.isEnabled() ? 0xFF00AA00 : 0xFFAA0000);
             context.drawText(this.client.textRenderer, module.getName(), 55, y + 4, 0xFFFFFFFF, false);
             
-            // Vẽ thanh Slider nếu là Hitbox và đang bật
             if (module.getName().equals("Hitbox") && module.isEnabled()) {
                 int sX = 50, sY = y + 15;
                 context.fill(sX, sY, sX + 100, sY + 10, 0xFF555555);
@@ -39,7 +37,7 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int y = 40;
-        for (Module module : ShibaClient.moduleManager.getModules()) {
+        for (Module module : ModuleManager.getModules()) {
             if (mouseX >= 50 && mouseX <= 150 && mouseY >= y && mouseY <= y + 15) {
                 module.toggle();
                 return true;
@@ -60,7 +58,7 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         int y = 40;
-        for (Module module : ShibaClient.moduleManager.getModules()) {
+        for (Module module : ModuleManager.getModules()) {
             if (module.getName().equals("Hitbox") && module.isEnabled()) {
                 int sX = 50, sY = y + 15;
                 if (mouseX >= sX && mouseX <= sX + 100 && mouseY >= sY && mouseY <= sY + 10) {
