@@ -1,0 +1,85 @@
+package com.example.shiba.module.impl;
+
+import com.example.shiba.module.Category;
+import com.example.shiba.module.Module;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.entity.Entity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.util.math.MathHelper;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+
+public class CritDisplay extends Module {
+    private static final long DURATION_MS = 700;
+    private final List<Popup> popups = new ArrayList<>();
+    private final Random random = new Random();
+
+    public CritDisplay() {
+        super("CritDisplay", "Hien thi chu CRIT khi danh trung chi mang", Category.RENDER);
+    }
+
+    public void trigger(Entity target) {
+        if (!isEnabled()) return;
+
+        popups.add(new Popup(System.currentTimeMillis(), (random.nextFloat() - 0.5f) * 40f));
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.world != null) {
+            double x = target.getX();
+            double y = target.getY() + target.getHeight() * 0.5;
+            double z = target.getZ();
+            for (int i = 0; i < 10; i++) {
+                double vx = (random.nextDouble() - 0.5) * 0.3;
+                double vy = random.nextDouble() * 0.3;
+                double vz = (random.nextDouble() - 0.5) * 0.3;
+                mc.world.addParticle(ParticleTypes.CRIT, x, y, z, vx, vy, vz);
+            }
+        }
+    }
+
+    public void render(DrawContext context) {
+        if (!isEnabled() || popups.isEmpty()) return;
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        long now = System.currentTimeMillis();
+        int centerX = mc.getWindow().getScaledWidth() / 2;
+        int centerY = mc.getWindow().getScaledHeight() / 2;
+
+        Iterator<Popup> it = popups.iterator();
+        while (it.hasNext()) {
+            Popup popup = it.next();
+            long elapsed = now - popup.startTime;
+            if (elapsed > DURATION_MS) {
+                it.remove();
+                continue;
+            }
+
+            float progress = elapsed / (float) DURATION_MS;
+            int yOffset = (int) (progress * -25f);
+            float alpha = 1.0f - progress;
+            int alphaInt = MathHelper.clamp((int) (alpha * 255f), 0, 255);
+            int color = (alphaInt << 24) | 0xFFD700;
+
+            String text = "CRIT!";
+            int textWidth = mc.textRenderer.getWidth(text);
+            int x = centerX + (int) popup.xOffset - textWidth / 2;
+            int y = centerY - 20 + yOffset;
+
+            context.drawTextWithShadow(mc.textRenderer, text, x, y, color);
+        }
+    }
+
+    private static class Popup {
+        final long startTime;
+        final float xOffset;
+
+        Popup(long startTime, float xOffset) {
+            this.startTime = startTime;
+            this.xOffset = xOffset;
+        }
+    }
+}
