@@ -18,17 +18,17 @@ public class ClickGuiScreen extends Screen {
         int y = 40;
         
         for (Module module : ShibaClient.moduleManager.getModules()) {
-            // Vẽ nút bật/tắt module
-            context.fill(50, y, 150, y + 15, module.isToggled() ? 0xFF00AA00 : 0xFFAA0000);
+            // Sửa isToggled() thành isEnabled()
+            context.fill(50, y, 150, y + 15, module.isEnabled() ? 0xFF00AA00 : 0xFFAA0000);
             context.drawText(this.client.textRenderer, module.getName(), 55, y + 4, 0xFFFFFFFF, false);
             
             // Vẽ thanh Slider nếu là Hitbox và đang bật
-            if (module.getName().equals("Hitbox") && module.isToggled()) {
+            if (module.getName().equals("Hitbox") && module.isEnabled()) {
                 int sX = 50, sY = y + 15;
-                context.fill(sX, sY, sX + 100, sY + 10, 0xFF555555); // Nền slider xám
+                context.fill(sX, sY, sX + 100, sY + 10, 0xFF555555);
                 
                 float percent = (Hitbox.expand - Hitbox.MIN_EXPAND) / (Hitbox.MAX_EXPAND - Hitbox.MIN_EXPAND);
-                context.fill(sX, sY, sX + (int)(100 * percent), sY + 10, 0xFFAAAAFF); // Màu đã kéo
+                context.fill(sX, sY, sX + (int)(100 * percent), sY + 10, 0xFFAAAAFF);
                 context.drawText(this.client.textRenderer, "Expand: " + String.format("%.2f", Hitbox.expand), sX + 2, sY + 1, 0xFFFFFFFF, false);
                 y += 10; 
             }
@@ -40,13 +40,11 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int y = 40;
         for (Module module : ShibaClient.moduleManager.getModules()) {
-            // Click bật/tắt
             if (mouseX >= 50 && mouseX <= 150 && mouseY >= y && mouseY <= y + 15) {
                 module.toggle();
                 return true;
             }
-            // Click kéo Slider Hitbox
-            if (module.getName().equals("Hitbox") && module.isToggled()) {
+            if (module.getName().equals("Hitbox") && module.isEnabled()) {
                 int sX = 50, sY = y + 15;
                 if (mouseX >= sX && mouseX <= sX + 100 && mouseY >= sY && mouseY <= sY + 10) {
                     updateHitboxSlider(mouseX, sX);
@@ -63,7 +61,7 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         int y = 40;
         for (Module module : ShibaClient.moduleManager.getModules()) {
-            if (module.getName().equals("Hitbox") && module.isToggled()) {
+            if (module.getName().equals("Hitbox") && module.isEnabled()) {
                 int sX = 50, sY = y + 15;
                 if (mouseX >= sX && mouseX <= sX + 100 && mouseY >= sY && mouseY <= sY + 10) {
                     updateHitboxSlider(mouseX, sX);
