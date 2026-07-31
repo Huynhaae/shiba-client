@@ -10,14 +10,22 @@ import net.minecraft.util.math.Vec3d;
 
 public class Aura extends Module {
 
+    public enum Mode { SPEED, SMOOTH }
+
     public double range = 4.0;
     public double smoothness = 0.35;
+    public double rotationSpeed = 180.0;
     public double attackDelayTicks = 4.0;
+    public Mode mode = Mode.SMOOTH;
 
     private int cooldownTicks = 0;
 
     public Aura() {
         super("Aura", "Tu dong xoay va tan cong entity gan nhat.", Category.COMBAT);
+    }
+
+    public void toggleMode() {
+        mode = (mode == Mode.SPEED) ? Mode.SMOOTH : Mode.SPEED;
     }
 
     @Override
@@ -86,10 +94,17 @@ public class Aura extends Module {
         float yawDiff = wrapDegrees(targetYaw - currentYaw);
         float pitchDiff = targetPitch - currentPitch;
 
-        float factor = (float) Math.max(0.05, Math.min(1.0, smoothness));
-
-        mc.player.setYaw(currentYaw + yawDiff * factor);
-        mc.player.setPitch(currentPitch + pitchDiff * factor);
+        if (mode == Mode.SMOOTH) {
+            float factor = (float) Math.max(0.05, Math.min(1.0, smoothness));
+            mc.player.setYaw(currentYaw + yawDiff * factor);
+            mc.player.setPitch(currentPitch + pitchDiff * factor);
+        } else {
+            float maxStep = (float) rotationSpeed;
+            float yawStep = Math.max(-maxStep, Math.min(maxStep, yawDiff));
+            float pitchStep = Math.max(-maxStep, Math.min(maxStep, pitchDiff));
+            mc.player.setYaw(currentYaw + yawStep);
+            mc.player.setPitch(currentPitch + pitchStep);
+        }
     }
 
     private float wrapDegrees(float deg) {
