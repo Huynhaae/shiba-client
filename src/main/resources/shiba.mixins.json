@@ -4,8 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "MixinEntity",
-    "MixinPlayerEntity",
-    "MixinClientPlayerInteractionManager"
+    "MixinPlayerEntity"
   ],
   "injectors": {
     "defaultRequire": 1
