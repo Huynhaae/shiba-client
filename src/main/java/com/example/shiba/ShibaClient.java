@@ -5,7 +5,6 @@ import com.example.shiba.gui.ClickGuiScreen;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
-import com.example.shiba.module.impl.WTap;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -52,16 +51,6 @@ public class ShibaClient implements ClientModInitializer {
                         boolean down = InputUtil.isKeyPressed(handle, m.keyCode);
                         m.tickKeybind(down);
                     }
-                }
-            }
-
-            WTap wtap = ModuleManager.WTAP;
-            if (wtap.pendingResprintTicks > 0) {
-                wtap.pendingResprintTicks--;
-                if (wtap.pendingResprintTicks == 0
-                        && client.player != null
-                        && client.options.sprintKey.isPressed()) {
-                    client.player.setSprinting(true);
                 }
             }
         });
