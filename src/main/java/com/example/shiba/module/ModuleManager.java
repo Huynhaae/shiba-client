@@ -8,6 +8,7 @@ import com.example.shiba.module.impl.Reach;
 import com.example.shiba.module.impl.TriggerBot;
 import com.example.shiba.module.impl.ESP;
 import com.example.shiba.module.impl.Aura;
+import com.example.shiba.module.impl.HitboxBV;   // <-- thêm import
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ public final class ModuleManager {
     public static final TriggerBot TRIGGERBOT = register(new TriggerBot());
     public static final ESP ESP = register(new ESP());
     public static final Aura AURA = register(new Aura());
+    public static final HitboxBV HITBOXBV = register(new HitboxBV());   // <-- thêm dòng này
 
     private ModuleManager() {}
 
