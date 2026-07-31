@@ -97,8 +97,8 @@ public class ModuleSettingsScreen extends Screen {
         if (module instanceof Aura aura) {
             y = addSlider(y, rowX, rowW, aura.range, 8.0,
                     v -> aura.range = v, v -> "Range: " + String.format("%.2f", v));
-            y = addSlider(y, rowX, rowW, aura.rotationSpeed, 360.0,
-                    v -> aura.rotationSpeed = v, v -> "Rotate Speed: " + String.format("%.0f", v));
+            y = addSlider(y, rowX, rowW, aura.smoothness, 1.0,
+                    v -> aura.smoothness = v, v -> "Smoothness: " + String.format("%.2f", v));
             y = addSlider(y, rowX, rowW, aura.attackDelayTicks, 20.0,
                     v -> aura.attackDelayTicks = v, v -> "Delay: " + String.format("%.0f ticks", v));
         }
