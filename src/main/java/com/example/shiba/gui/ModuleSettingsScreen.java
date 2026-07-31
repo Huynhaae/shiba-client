@@ -97,8 +97,26 @@ public class ModuleSettingsScreen extends Screen {
         if (module instanceof Aura aura) {
             y = addSlider(y, rowX, rowW, aura.range, 8.0,
                     v -> aura.range = v, v -> "Range: " + String.format("%.2f", v));
-            y = addSlider(y, rowX, rowW, aura.smoothness, 1.0,
-                    v -> aura.smoothness = v, v -> "Smoothness: " + String.format("%.2f", v));
+
+            ButtonWidget modeToggle = ButtonWidget.builder(
+                    Text.literal("Mode: " + aura.mode.name()),
+                    btn -> {
+                        aura.toggleMode();
+                        btn.setMessage(Text.literal("Mode: " + aura.mode.name()));
+                        ConfigManager.save();
+                    }
+            ).dimensions(rowX, y, rowW, ROW_HEIGHT).build();
+            this.addDrawableChild(modeToggle);
+            y += ROW_HEIGHT + SPACING;
+
+            if (aura.mode == Aura.Mode.SMOOTH) {
+                y = addSlider(y, rowX, rowW, aura.smoothness, 1.0,
+                        v -> aura.smoothness = v, v -> "Smoothness: " + String.format("%.2f", v));
+            } else {
+                y = addSlider(y, rowX, rowW, aura.rotationSpeed, 360.0,
+                        v -> aura.rotationSpeed = v, v -> "Speed: " + String.format("%.0f", v));
+            }
+
             y = addSlider(y, rowX, rowW, aura.attackDelayTicks, 20.0,
                     v -> aura.attackDelayTicks = v, v -> "Delay: " + String.format("%.0f ticks", v));
         }
