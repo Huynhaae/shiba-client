@@ -21,7 +21,7 @@ public class Aura extends Module {
     private int cooldownTicks = 0;
 
     public Aura() {
-        super("Aura", "Tu dong xoay va tan cong entity gan nhat.", Category.COMBAT);
+        super("Aura", "ko bt aura la j a.", Category.COMBAT);
     }
 
     public void toggleMode() {
