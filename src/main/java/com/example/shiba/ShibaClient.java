@@ -6,19 +6,26 @@ import com.example.shiba.module.Module;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferRenderer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormats;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 public class ShibaClient implements ClientModInitializer {
@@ -89,25 +96,67 @@ public class ShibaClient implements ClientModInitializer {
 
             var esp = ModuleManager.ESP;
             if (esp.isEnabled()) {
-                RenderSystem.disableDepthTest();
-                var buffer = context.consumers().getBuffer(RenderLayer.getLines());
-                for (Entity entity : mc.world.getEntities()) {
-                    if (entity == mc.player) continue;
-                    if (!(entity instanceof net.minecraft.entity.LivingEntity)) continue;
-                    if (entity.squaredDistanceTo(mc.player) > esp.range * esp.range) continue;
-
-                    Box box = entity.getBoundingBox().offset(-camPos.x, -camPos.y, -camPos.z);
-                    context.matrixStack().push();
-                    WorldRenderer.drawBox(
-                            context.matrixStack(), buffer,
-                            box.minX, box.minY, box.minZ,
-                            box.maxX, box.maxY, box.maxZ,
-                            0.2F, 1.0F, 0.3F, 0.9F
-                    );
-                    context.matrixStack().pop();
-                }
-                RenderSystem.enableDepthTest();
+                renderEspThroughWalls(mc, camPos, esp.range);
             }
         });
+    }
+
+    private void renderEspThroughWalls(MinecraftClient mc, Vec3d camPos, double range) {
+        Matrix4f matrix = new Matrix4f();
+
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.disableCull();
+        RenderSystem.lineWidth(2.0F);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
+
+        boolean any = false;
+
+        for (Entity entity : mc.world.getEntities()) {
+            if (entity == mc.player) continue;
+            if (!(entity instanceof net.minecraft.entity.LivingEntity)) continue;
+            if (entity.squaredDistanceTo(mc.player) > range * range) continue;
+
+            Box box = entity.getBoundingBox().offset(-camPos.x, -camPos.y, -camPos.z);
+            addBoxLines(buffer, matrix, box, 0.2F, 1.0F, 0.3F, 0.9F);
+            any = true;
+        }
+
+        if (any) {
+            BufferRenderer.drawWithGlobalProgram(buffer.end());
+        }
+
+        RenderSystem.enableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
+    }
+
+    private void addBoxLines(BufferBuilder buffer, Matrix4f matrix, Box box, float r, float g, float b, float a) {
+        float minX = (float) box.minX, minY = (float) box.minY, minZ = (float) box.minZ;
+        float maxX = (float) box.maxX, maxY = (float) box.maxY, maxZ = (float) box.maxZ;
+
+        float[][] corners = {
+                {minX, minY, minZ}, {maxX, minY, minZ},
+                {maxX, minY, maxZ}, {minX, minY, maxZ},
+                {minX, maxY, minZ}, {maxX, maxY, minZ},
+                {maxX, maxY, maxZ}, {minX, maxY, maxZ}
+        };
+
+        int[][] edges = {
+                {0,1},{1,2},{2,3},{3,0},
+                {4,5},{5,6},{6,7},{7,4},
+                {0,4},{1,5},{2,6},{3,7}
+        };
+
+        for (int[] edge : edges) {
+            float[] p1 = corners[edge[0]];
+            float[] p2 = corners[edge[1]];
+            buffer.vertex(matrix, p1[0], p1[1], p1[2]).color(r, g, b, a);
+            buffer.vertex(matrix, p2[0], p2[1], p2[2]).color(r, g, b, a);
+        }
     }
 }
