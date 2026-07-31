@@ -13,6 +13,7 @@ public class TriggerBot extends Module {
     public double fov = 15.0;
     public double range = 3.0;
     public boolean critEnabled = false;
+    public double attackDelayTicks = 4.0;
 
     private int cooldownTicks = 0;
 
@@ -41,17 +42,12 @@ public class TriggerBot extends Module {
 
         if (critEnabled) {
             boolean falling = mc.player.fallDistance > 0.0F && mc.player.getVelocity().y < 0.0;
-            if (!falling) {
-                if (mc.player.isOnGround()) {
-                    mc.player.jump();
-                }
-                return;
-            }
+            if (!falling) return;
         }
 
         mc.interactionManager.attackEntity(mc.player, target);
         mc.player.swingHand(Hand.MAIN_HAND);
-        cooldownTicks = 2;
+        cooldownTicks = (int) Math.round(attackDelayTicks);
     }
 
     private Entity findTarget(MinecraftClient mc) {
