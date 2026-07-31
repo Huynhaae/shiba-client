@@ -6,6 +6,7 @@ import com.example.shiba.module.Module;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
 import com.example.shiba.module.impl.WTap;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -13,9 +14,12 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import org.lwjgl.glfw.GLFW;
 
 public class ShibaClient implements ClientModInitializer {
@@ -83,21 +87,37 @@ public class ShibaClient implements ClientModInitializer {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.world == null || mc.player == null) return;
 
-            Hitbox hitbox = ModuleManager.HITBOX;
-            if (!hitbox.isEnabled() || !hitbox.renderOutline) return;
-
             var camPos = context.camera().getPos();
 
-            for (Entity entity : mc.world.getEntities()) {
-                if (entity == mc.player) continue;
-                if (entity.squaredDistanceTo(mc.player) > 64 * 64) continue;
+            Hitbox hitbox = ModuleManager.HITBOX;
+            if (hitbox.isEnabled() && hitbox.renderOutline) {
+                for (Entity entity : mc.world.getEntities()) {
+                    if (entity == mc.player) continue;
+                    if (entity.squaredDistanceTo(mc.player) > 64 * 64) continue;
+                    hitbox.renderExpandedBox(context.matrixStack(), context.consumers(), entity, camPos);
+                }
+            }
 
-                hitbox.renderExpandedBox(
-                        context.matrixStack(),
-                        context.consumers(),
-                        entity,
-                        camPos
-                );
+            var esp = ModuleManager.ESP;
+            if (esp.isEnabled()) {
+                RenderSystem.disableDepthTest();
+                var buffer = context.consumers().getBuffer(RenderLayer.getLines());
+                for (Entity entity : mc.world.getEntities()) {
+                    if (entity == mc.player) continue;
+                    if (!(entity instanceof net.minecraft.entity.LivingEntity)) continue;
+                    if (entity.squaredDistanceTo(mc.player) > esp.range * esp.range) continue;
+
+                    Box box = entity.getBoundingBox().offset(-camPos.x, -camPos.y, -camPos.z);
+                    context.matrixStack().push();
+                    WorldRenderer.drawBox(
+                            context.matrixStack(), buffer,
+                            box.minX, box.minY, box.minZ,
+                            box.maxX, box.maxY, box.maxZ,
+                            0.2F, 1.0F, 0.3F, 0.9F
+                    );
+                    context.matrixStack().pop();
+                }
+                RenderSystem.enableDepthTest();
             }
         });
     }
