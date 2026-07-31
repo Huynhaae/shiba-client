@@ -3,13 +3,16 @@ package com.example.shiba;
 import com.example.shiba.config.ConfigManager;
 import com.example.shiba.gui.ClickGuiScreen;
 import com.example.shiba.module.ModuleManager;
+import com.example.shiba.module.impl.Hitbox;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import org.lwjgl.glfw.GLFW;
 
@@ -52,7 +55,28 @@ public class ShibaClient implements ClientModInitializer {
                 context.drawTextWithShadow(mc.textRenderer,
                         mc.getCurrentFps() + " FPS", 4, y, 0xFFFFFF);
             }
-            ModuleManager.CRIT.render(context);
+        });
+
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc.world == null || mc.player == null) return;
+
+            Hitbox hitbox = ModuleManager.HITBOX;
+            if (!hitbox.isEnabled() || !hitbox.renderOutline) return;
+
+            var camPos = context.camera().getPos();
+
+            for (Entity entity : mc.world.getEntities()) {
+                if (entity == mc.player) continue;
+                if (entity.squaredDistanceTo(mc.player) > 64 * 64) continue;
+
+                hitbox.renderExpandedBox(
+                        context.matrixStack(),
+                        context.consumers(),
+                        entity,
+                        camPos
+                );
+            }
         });
     }
 }
