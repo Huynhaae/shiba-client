@@ -6,6 +6,7 @@ import com.example.shiba.module.impl.Zoom;
 import com.example.shiba.module.impl.Hitbox;
 import com.example.shiba.module.impl.Reach;
 import com.example.shiba.module.impl.TriggerBot;
+import com.example.shiba.module.impl.WTap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,7 @@ public final class ModuleManager {
     public static final Hitbox HITBOX = register(new Hitbox());
     public static final Reach REACH = register(new Reach());
     public static final TriggerBot TRIGGERBOT = register(new TriggerBot());
+    public static final WTap WTAP = register(new WTap());
 
     private ModuleManager() {}
 
