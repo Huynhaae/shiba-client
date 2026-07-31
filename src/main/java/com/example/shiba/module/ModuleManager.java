@@ -5,6 +5,7 @@ import com.example.shiba.module.impl.FpsHud;
 import com.example.shiba.module.impl.Zoom;
 import com.example.shiba.module.impl.Hitbox;
 import com.example.shiba.module.impl.Reach;
+import com.example.shiba.module.impl.TriggerBot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ public final class ModuleManager {
     public static final Zoom ZOOM = register(new Zoom());
     public static final Hitbox HITBOX = register(new Hitbox());
     public static final Reach REACH = register(new Reach());
+    public static final TriggerBot TRIGGERBOT = register(new TriggerBot());
 
     private ModuleManager() {}
 
