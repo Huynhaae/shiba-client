@@ -19,7 +19,7 @@ public class CritDisplay extends Module {
     private final Random random = new Random();
 
     public CritDisplay() {
-        super("CritDisplay", "Hien thi chu CRIT khi danh trung chi mang", Category.RENDER);
+        super("CritDisplay", "Hien thi chu CRIT khi danh trung chi mang de ngau hon =DD", Category.RENDER);
     }
 
     public void trigger(Entity target) {
