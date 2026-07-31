@@ -104,7 +104,7 @@ public class ModuleSettingsScreen extends Screen {
         }
 
         if (module instanceof ESP esp) {
-            y = addSlider(y, rowX, rowW, esp.range, 100.0,
+            y = addSlider(y, rowX, rowW, esp.range, 5000.0,
                     v -> esp.range = v, v -> "Range: " + String.format("%.0f", v));
         }
 
