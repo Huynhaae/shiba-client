@@ -17,7 +17,7 @@ public class MixinLivingEntityBV {
 
     @Inject(method = "getBoundingBox", at = @At("RETURN"), cancellable = true)
     private void onGetBoundingBox(CallbackInfoReturnable<Box> cir) {
-        HitboxBV module = ModuleManager.getModule(HitboxBV.class);
+        HitboxBV module = ModuleManager.HITBOXBV;
         if (module == null || !module.isEnabled()) return;
 
         Entity entity = (Entity) (Object) this;
