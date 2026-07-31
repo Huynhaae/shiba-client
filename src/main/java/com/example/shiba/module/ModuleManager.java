@@ -7,6 +7,8 @@ import com.example.shiba.module.impl.Hitbox;
 import com.example.shiba.module.impl.Reach;
 import com.example.shiba.module.impl.TriggerBot;
 import com.example.shiba.module.impl.WTap;
+import com.example.shiba.module.impl.ESP;
+import com.example.shiba.module.impl.Aura;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,8 @@ public final class ModuleManager {
     public static final Reach REACH = register(new Reach());
     public static final TriggerBot TRIGGERBOT = register(new TriggerBot());
     public static final WTap WTAP = register(new WTap());
+    public static final ESP ESP = register(new ESP());
+    public static final Aura AURA = register(new Aura());
 
     private ModuleManager() {}
 
