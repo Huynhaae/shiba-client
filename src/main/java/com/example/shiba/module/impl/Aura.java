@@ -11,7 +11,7 @@ import net.minecraft.util.math.Vec3d;
 public class Aura extends Module {
 
     public double range = 4.0;
-    public double rotationSpeed = 180.0;
+    public double smoothness = 0.35;
     public double attackDelayTicks = 4.0;
 
     private int cooldownTicks = 0;
@@ -83,16 +83,13 @@ public class Aura extends Module {
         float currentYaw = mc.player.getYaw();
         float currentPitch = mc.player.getPitch();
 
-        float maxStep = (float) rotationSpeed;
-
         float yawDiff = wrapDegrees(targetYaw - currentYaw);
         float pitchDiff = targetPitch - currentPitch;
 
-        float yawStep = Math.max(-maxStep, Math.min(maxStep, yawDiff));
-        float pitchStep = Math.max(-maxStep, Math.min(maxStep, pitchDiff));
+        float factor = (float) Math.max(0.05, Math.min(1.0, smoothness));
 
-        mc.player.setYaw(currentYaw + yawStep);
-        mc.player.setPitch(currentPitch + pitchStep);
+        mc.player.setYaw(currentYaw + yawDiff * factor);
+        mc.player.setPitch(currentPitch + pitchDiff * factor);
     }
 
     private float wrapDegrees(float deg) {
