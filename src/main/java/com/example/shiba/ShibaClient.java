@@ -2,6 +2,7 @@ package com.example.shiba;
 
 import com.example.shiba.config.ConfigManager;
 import com.example.shiba.gui.ClickGuiScreen;
+import com.example.shiba.module.Module;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
 import net.fabricmc.api.ClientModInitializer;
@@ -38,6 +39,16 @@ public class ShibaClient implements ClientModInitializer {
                 client.setScreen(new ClickGuiScreen());
             }
             ModuleManager.tick();
+
+            if (client.currentScreen == null) {
+                long handle = client.getWindow().getHandle();
+                for (Module m : ModuleManager.getModules()) {
+                    if (m.keyCode != -1) {
+                        boolean down = InputUtil.isKeyPressed(handle, m.keyCode);
+                        m.tickKeybind(down);
+                    }
+                }
+            }
         });
 
         HudRenderCallback.EVENT.register((context, tickCounter) -> {
