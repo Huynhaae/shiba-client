@@ -19,7 +19,7 @@ public class Hitbox extends Module {
     public boolean renderOutline = true;
 
     public Hitbox() {
-        super("Hitbox", "Mo rong hitbox that cua entity de danh nhat quan hon.", Category.COMBAT);
+        super("Hitbox", "biet hitbox no ra sao roi con hoi cach dung , ngu vcl.", Category.COMBAT);
     }
 
     @Override
