@@ -2,10 +2,12 @@ package com.example.shiba.module.impl;
 
 import com.example.shiba.module.Category;
 import com.example.shiba.module.Module;
+import com.example.shiba.module.ModuleManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class TriggerBot extends Module {
@@ -54,6 +56,9 @@ public class TriggerBot extends Module {
         Vec3d eyePos = mc.cameraEntity.getEyePos();
         Vec3d lookVec = mc.cameraEntity.getRotationVec(1.0F).normalize();
 
+        Hitbox hitbox = ModuleManager.HITBOX;
+        boolean useHitbox = hitbox != null && hitbox.isEnabled();
+
         Entity closest = null;
         double closestAngle = fov / 2.0;
 
@@ -62,10 +67,13 @@ public class TriggerBot extends Module {
             if (!(entity instanceof LivingEntity living)) continue;
             if (living.isDead() || living.getHealth() <= 0) continue;
 
-            double distance = eyePos.distanceTo(entity.getBoundingBox().getCenter());
+            Box box = useHitbox ? hitbox.getExpandedBox(entity) : entity.getBoundingBox();
+            Vec3d center = box.getCenter();
+
+            double distance = eyePos.distanceTo(center);
             if (distance > range) continue;
 
-            Vec3d toEntity = entity.getBoundingBox().getCenter().subtract(eyePos).normalize();
+            Vec3d toEntity = center.subtract(eyePos).normalize();
             double dot = Math.max(-1.0, Math.min(1.0, lookVec.dotProduct(toEntity)));
             double angleDeg = Math.toDegrees(Math.acos(dot));
 
