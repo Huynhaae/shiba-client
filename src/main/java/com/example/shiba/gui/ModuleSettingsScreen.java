@@ -73,10 +73,12 @@ public class ModuleSettingsScreen extends Screen {
         }
 
         if (module instanceof TriggerBot tb) {
-            y = addSlider(y, rowX, rowW, tb.fov, 60.0,
-                    v -> tb.fov = v, v -> "FOV: " + String.format("%.1f", v));
-            y = addSlider(y, rowX, rowW, tb.range, 6.0,
-                    v -> tb.range = v, v -> "Range: " + String.format("%.2f", v));
+    y = addSlider(y, rowX, rowW, tb.fov, 60.0,
+            v -> tb.fov = v, v -> "FOV: " + String.format("%.1f", v));
+    y = addSlider(y, rowX, rowW, tb.range, 6.0,
+            v -> tb.range = v, v -> "Range: " + String.format("%.2f", v));
+    y = addSlider(y, rowX, rowW, tb.attackDelayTicks, 20.0,
+            v -> tb.attackDelayTicks = v, v -> "Delay: " + String.format("%.0f ticks", v));
 
             ButtonWidget critToggle = ButtonWidget.builder(
                     Text.literal("Crit: " + (tb.critEnabled ? "ON" : "OFF")),
