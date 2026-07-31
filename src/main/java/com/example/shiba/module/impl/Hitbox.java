@@ -19,7 +19,7 @@ public class Hitbox extends Module {
     public boolean renderOutline = true;
 
     public Hitbox() {
-        super("Hitbox", "Mở rộng hitbox của entity để dễ trúng đòn hơn.", Category.COMBAT);
+        super("Hitbox", "Mo rong hitbox that cua entity de danh nhat quan hon.", Category.COMBAT);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class Hitbox extends Module {
     }
 
     public Box getExpandedBox(Entity entity) {
-        return entity.getBoundingBox().expand(expand);
+        return entity.getBoundingBox();
     }
 
     public Entity findExpandedTarget(double reach) {
@@ -58,8 +58,8 @@ public class Hitbox extends Module {
             if (!(candidate instanceof LivingEntity living)) continue;
             if (living.isDead() || living.getHealth() <= 0) continue;
 
-            Box expandedBox = getExpandedBox(candidate);
-            var hit = expandedBox.raycast(eyePos, reachEnd);
+            Box box = getExpandedBox(candidate);
+            var hit = box.raycast(eyePos, reachEnd);
 
             if (hit.isPresent()) {
                 double distance = eyePos.distanceTo(hit.get());
