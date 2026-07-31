@@ -35,7 +35,7 @@ public class Hitbox extends Module {
     }
 
     public Box getExpandedBox(Entity entity) {
-        return entity.getBoundingBox();
+        return entity.getBoundingBox().expand(expand);
     }
 
     public Entity findExpandedTarget(double reach) {
