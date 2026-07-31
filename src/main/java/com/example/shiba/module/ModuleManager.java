@@ -11,7 +11,7 @@ import java.util.List;
 
 public final class ModuleManager {
     private static final List<Module> MODULES = new ArrayList<>();
-    
+
     public static final CoordsHud COORDS = register(new CoordsHud());
     public static final FpsHud FPS = register(new FpsHud());
     public static final Zoom ZOOM = register(new Zoom());
