@@ -6,6 +6,9 @@ public abstract class Module {
     private final Category category;
     private boolean enabled;
 
+    public int keyCode = -1;
+    private boolean keyWasDown = false;
+
     protected Module(String name, String description, Category category) {
         this.name = name;
         this.description = description;
@@ -24,6 +27,13 @@ public abstract class Module {
     }
 
     public void toggle() { setEnabled(!enabled); }
+
+    public void tickKeybind(boolean isDown) {
+        if (isDown && !keyWasDown) {
+            toggle();
+        }
+        keyWasDown = isDown;
+    }
 
     protected void onEnable() {}
     protected void onDisable() {}
