@@ -16,16 +16,12 @@ public class MixinClientPlayNetworkHandler {
     @Inject(method = "sendPacket", at = @At("HEAD"), cancellable = true)
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
         AuraX aura = ModuleManager.AURAX;
-        if (aura == null || !aura.isEnabled()) return;
-
-        // Nếu mode Silent và packet là rotation thì chặn
-        if (aura.getMode().equals("Silent")) {
-            if (packet instanceof PlayerMoveC2SPacket) {
-                PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
-                // Nếu packet có thay đổi yaw/pitch thì chặn
-                if (movePacket.changesLook()) {
-                    ci.cancel();
-                }
+        if (aura != null && aura.isEnabled() && aura.getMode().equals("Silent")) {
+            // Chặn tất cả packet xoay người để server không thấy
+            if (packet instanceof PlayerMoveC2SPacket.LookOnly ||
+                packet instanceof PlayerMoveC2SPacket.PositionAndOnGround ||
+                packet instanceof PlayerMoveC2SPacket.Full) {
+                ci.cancel();
             }
         }
     }
