@@ -2,7 +2,7 @@ package com.example.shiba.module.settings;
 
 public class NumberSetting extends Setting {
     private double min, max, value, step;
-    private int sliderX, sliderY, sliderWidth, sliderHeight;
+   private int sliderX, sliderY, sliderWidth, sliderHeight;
 
 public void setSliderX(int x) { this.sliderX = x; }
 public void setSliderY(int y) { this.sliderY = y; }
