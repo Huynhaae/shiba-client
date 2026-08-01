@@ -41,10 +41,12 @@ public class AuraX extends Module {
     private LivingEntity target = null;
     private double currentCPS = 10.0;
 
-    // Biến cho Silent Rotation mượt mà
+    // Biến Silent Rotation
     private long lastFakeRotationTime = 0;
     private float lastYaw = 0;
     private float lastPitch = 0;
+    private int tickCounter = 0;
+    private static final int SEND_INTERVAL_TICKS = 4; // Gửi mỗi 4 tick (5 lần/giây)
 
     public AuraX() {
         super("AuraX", "KillAura với Timing Crit & Silent Rotation", Category.COMBAT);
@@ -55,6 +57,7 @@ public class AuraX extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
 
+        tickCounter++;
         adjustCPS();
         target = findTarget(mc);
         if (target == null) return;
@@ -68,7 +71,7 @@ public class AuraX extends Module {
 
         String currentMode = mode.getValue();
 
-        // Xử lý rotation theo chế độ
+        // Silent Rotation với cơ chế đồng bộ tick
         if (currentMode.equals("Silent")) {
             sendFakeRotation(mc, target);
         } else if (!currentMode.equals("None")) {
@@ -156,45 +159,61 @@ public class AuraX extends Module {
     }
 
     /**
-     * Silent Rotation: Gửi packet xoay giả nhưng không xoay camera thật.
-     * - Chỉ gửi khi góc thay đổi > 2° (tránh spam)
-     * - Giới hạn tần suất 5 lần/giây (200ms)
-     * - Giúp server thấy bạn xoay nhưng camera vẫn tự do
+     * Silent Rotation mượt mà:
+     * - Chỉ gửi packet mỗi 4 tick (5 lần/giây)
+     * - Góc thay đổi từ từ, không giật cục
      */
     private void sendFakeRotation(MinecraftClient mc, LivingEntity target) {
+        // Đồng bộ tick: chỉ gửi mỗi SEND_INTERVAL_TICKS tick
+        if (tickCounter % SEND_INTERVAL_TICKS != 0) return;
+
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
         Vec3d diff = targetPos.subtract(playerPos);
 
-        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
-        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
-        pitch = MathHelper.clamp(pitch, -90, 90);
+        float targetYaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
+        float targetPitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
+        targetPitch = MathHelper.clamp(targetPitch, -90, 90);
 
-        // Chỉ gửi nếu góc thay đổi đáng kể (tránh spam packet)
-        if (Math.abs(yaw - lastYaw) < 2.0f && Math.abs(pitch - lastPitch) < 1.0f) {
+        // Làm mượt góc: di chuyển dần về góc mục tiêu (không nhảy đột ngột)
+        float yawStep = 2.5f;   // độ thay đổi tối đa mỗi lần
+        float pitchStep = 1.5f;
+
+        float newYaw = lastYaw;
+        float newPitch = lastPitch;
+
+        // Chỉ thay đổi nếu góc lệch đủ lớn
+        float yawDiff = MathHelper.wrapDegrees(targetYaw - lastYaw);
+        if (Math.abs(yawDiff) > 1.0f) {
+            newYaw += Math.signum(yawDiff) * Math.min(Math.abs(yawDiff), yawStep);
+        }
+        float pitchDiff = targetPitch - lastPitch;
+        if (Math.abs(pitchDiff) > 0.5f) {
+            newPitch += Math.signum(pitchDiff) * Math.min(Math.abs(pitchDiff), pitchStep);
+        }
+
+        // Nếu gần đạt mục tiêu thì dùng chính xác để tránh sai lệch tích tụ
+        if (Math.abs(yawDiff) < yawStep) newYaw = targetYaw;
+        if (Math.abs(pitchDiff) < pitchStep) newPitch = targetPitch;
+
+        // Nếu góc gần như không đổi, bỏ qua
+        if (Math.abs(newYaw - lastYaw) < 0.1f && Math.abs(newPitch - lastPitch) < 0.1f) {
             return;
         }
 
-        // Giới hạn tần suất gửi (tối đa 5 lần/giây để tránh bị anticheat phạt)
-        long now = System.currentTimeMillis();
-        if (now - lastFakeRotationTime < 200) {
-            return;
-        }
-
-        lastYaw = yaw;
-        lastPitch = pitch;
-        lastFakeRotationTime = now;
+        // Cập nhật góc đã lưu
+        lastYaw = newYaw;
+        lastPitch = newPitch;
 
         PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.Full(
             mc.player.getX(),
             mc.player.getY(),
             mc.player.getZ(),
-            yaw,
-            pitch,
+            newYaw,
+            newPitch,
             mc.player.isOnGround()
         );
 
-        // Bỏ qua chặn packet để gửi xoay giả
         PacketBlocker.setIgnoreLookPackets(true);
         mc.player.networkHandler.sendPacket(packet);
         PacketBlocker.setIgnoreLookPackets(false);
