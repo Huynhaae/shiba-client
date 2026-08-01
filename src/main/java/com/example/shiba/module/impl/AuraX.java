@@ -11,9 +11,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 import java.util.Comparator;
@@ -22,24 +25,23 @@ import java.util.stream.Collectors;
 
 public class AuraX extends Module {
     // Settings
-    private final ModeSetting mode = new ModeSetting("Mode", "Silent", "Silent", "Legit", "Blatant");
+    private final ModeSetting mode = new ModeSetting("Mode", "Silent", "Silent", "Normal", "None");
     private final NumberSetting minCPS = new NumberSetting("MinCPS", 6.0, 12.0, 8.0, 0.5);
     private final NumberSetting maxCPS = new NumberSetting("MaxCPS", 10.0, 20.0, 14.0, 0.5);
     private final NumberSetting range = new NumberSetting("Range", 3.0, 8.0, 4.5, 0.1);
     private final BooleanSetting autoCrit = new BooleanSetting("AutoCrit", true);
     private final ModeSetting critMode = new ModeSetting("CritMode", "Timing", "Timing", "Standard");
-    private final BooleanSetting silentRot = new BooleanSetting("SilentRotation", true);
     private final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     private final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
 
-    // Variables
     private long lastAttackTime = 0;
     private LivingEntity target = null;
     private double currentCPS = 10.0;
     private boolean wasOnGround = true;
+    private double lastY = 0;
 
     public AuraX() {
-        super("AuraX", "KillAura nâng cao với nhiều chế độ", Category.COMBAT);
+        super("AuraX", "KillAura với Timing Crit & No Rotation", Category.COMBAT);
     }
 
     @Override
@@ -47,9 +49,7 @@ public class AuraX extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
 
-        // Tự động điều chỉnh CPS (tránh bị anticheat phát hiện)
         adjustCPS();
-
         target = findTarget(mc);
         if (target == null) return;
 
@@ -60,32 +60,33 @@ public class AuraX extends Module {
         long delay = (long) (1000 / currentCPS);
         if (now - lastAttackTime < delay) return;
 
-        // Silent Rotation – không cần nhìn vẫn đánh trúng
-        if (mode.getValue().equals("Silent") || silentRot.getValue()) {
-            silentRotateToTarget(mc, target);
-        } else {
+        // Rotation - giữ nguyên hướng nhìn nếu chọn None
+        if (!mode.getValue().equals("None")) {
             rotateToTarget(mc, target);
         }
+        // Nếu chọn None, không xoay gì cả, nhưng vẫn tấn công (có thể không trúng trên server chặt)
 
-        // Auto Crit - chỉ đánh khi chạm đất (không vừa nhảy vừa đánh)
-        if (autoCrit.getValue() && mc.player.isOnGround() && !wasOnGround) {
-            // Vừa chạm đất → đánh crit
-            attack(mc, target);
-            lastAttackTime = now;
-        } else if (!autoCrit.getValue()) {
-            // Đánh bình thường
-            attack(mc, target);
-            lastAttackTime = now;
-        } else if (critMode.getValue().equals("Timing") && mc.player.isOnGround()) {
-            // Chế độ Timing: chỉ đánh khi vừa rơi xuống
-            if (!wasOnGround) {
-                attack(mc, target);
-                lastAttackTime = now;
+        // AutoCrit logic
+        boolean shouldAttack = false;
+        if (autoCrit.getValue()) {
+            if (critMode.getValue().equals("Timing")) {
+                // Đánh khi đang rơi và sắp chạm đất (khoảng cách < 0.3 block)
+                if (isAboutToLand(mc)) {
+                    shouldAttack = true;
+                }
+            } else { // Standard
+                if (mc.player.isOnGround()) {
+                    shouldAttack = true;
+                }
             }
+        } else {
+            shouldAttack = true;
         }
 
-        // Cập nhật trạng thái
-        wasOnGround = mc.player.isOnGround();
+        if (shouldAttack) {
+            attack(mc, target);
+            lastAttackTime = now;
+        }
     }
 
     private void attack(MinecraftClient mc, LivingEntity target) {
@@ -94,12 +95,10 @@ public class AuraX extends Module {
     }
 
     private void adjustCPS() {
-        // Random trong khoảng minCPS và maxCPS để tránh bị phát hiện
         double min = minCPS.getValue();
         double max = maxCPS.getValue();
-        // Thay đổi CPS từ từ để trông tự nhiên
         double targetCPS = min + (Math.random() * (max - min));
-        currentCPS += (targetCPS - currentCPS) * 0.1; // Làm mịn
+        currentCPS += (targetCPS - currentCPS) * 0.1;
         currentCPS = Math.min(max, Math.max(min, currentCPS));
     }
 
@@ -135,30 +134,6 @@ public class AuraX extends Module {
                 .orElse(null);
     }
 
-    /**
-     * Silent Rotation: Không gửi packet xoay người lên server
-     * Chỉ thay đổi góc nhìn client-side
-     */
-    private void silentRotateToTarget(MinecraftClient mc, LivingEntity target) {
-        Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
-        Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
-        Vec3d diff = targetPos.subtract(playerPos);
-
-        double yaw = Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90;
-        double pitch = -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
-        pitch = MathHelper.clamp(pitch, -90, 90);
-
-        // Chỉ set client-side, không gửi lên server
-        mc.player.setYaw((float) yaw);
-        mc.player.setPitch((float) pitch);
-
-        // Quan trọng: Không gửi packet rotation
-        // Nếu cần, bạn có thể mixin để ngăn chặn việc gửi packet
-    }
-
-    /**
-     * Normal Rotation (dùng cho Legit/Blatant)
-     */
     private void rotateToTarget(MinecraftClient mc, LivingEntity target) {
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
@@ -168,10 +143,34 @@ public class AuraX extends Module {
         double pitch = -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
+        // Nếu mode là Silent, chỉ set client-side (không gửi packet)
+        // Nếu mode Normal, set bình thường (có gửi packet)
         mc.player.setYaw((float) yaw);
         mc.player.setPitch((float) pitch);
+    }
 
-        // Gửi packet rotation nếu cần
-        // (mặc định Minecraft sẽ tự động gửi khi setYaw/setPitch)
+    /**
+     * Kiểm tra xem player có sắp chạm đất không (trong vòng 1 tick)
+     * Bằng cách tính vận tốc và khoảng cách xuống đất
+     */
+    private boolean isAboutToLand(MinecraftClient mc) {
+        if (mc.player == null) return false;
+        // Nếu đang rơi
+        if (mc.player.getVelocity().y < 0) {
+            // Lấy raycast xuống dưới
+            Vec3d start = mc.player.getPos();
+            Vec3d end = start.add(0, -2, 0);
+            RaycastContext context = new RaycastContext(start, end,
+                    RaycastContext.ShapeType.COLLIDER,
+                    RaycastContext.FluidHandling.NONE,
+                    mc.player);
+            BlockHitResult hit = mc.world.raycast(context);
+            if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
+                double distance = start.y - hit.getPos().y;
+                // Nếu khoảng cách < 0.3 và vận tốc Y > -0.5 (sắp chạm đất)
+                return distance < 0.3 && mc.player.getVelocity().y > -0.5;
+            }
+        }
+        return false;
     }
 }
