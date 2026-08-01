@@ -117,25 +117,32 @@ public class ClickGuiScreen extends Screen {
 
     // Hiệu ứng đuôi xanh lam phát sáng, hình tròn, nhỏ hơn
     private void drawTrailGlow(DrawContext context) {
-        int size = trailPoints.size();
-        if (size < 2) return;
+    int size = trailPoints.size();
+    if (size < 2) return;
 
-        for (int i = 0; i < size; i++) {
-            int[] pt = trailPoints.get(i);
-            float progress = (float) i / size; // 0 -> 1 (càng về cuối càng đậm)
-            int alpha = (int)(30 + 80 * progress); // độ trong suốt tăng dần
-            int radius = 8 + (int)(18 * progress); // bán kính nhỏ hơn (8-26)
+    // Màu xanh neon: #00BFFF (DeepSkyBlue) với ánh sáng mạnh
+    int neonBlue = 0x00BFFF;
 
-            // Màu xanh lam phát sáng (0x1E90FF = DodgerBlue)
-            for (int r = radius; r > 0; r -= 2) {
-                float p = (float) r / radius;
-                int a = (int)(alpha * (1 - p * p)); // mờ dần từ tâm ra ngoài
-                if (a <= 0) continue;
-                int color = (a << 24) | 0x1E90FF;
-                context.fill(pt[0] - r, pt[1] - r, pt[0] + r, pt[1] + r, color);
-            }
+    for (int i = 0; i < size; i++) {
+        int[] pt = trailPoints.get(i);
+        float progress = (float) i / size; // 0 → 1
+        int alpha = (int)(50 + 120 * progress); // sáng hơn
+        int radius = 6 + (int)(22 * progress); // bán kính 6-28
+
+        // Vẽ nhiều lớp để tạo hiệu ứng phát sáng
+        for (int r = radius; r > 0; r--) {
+            float p = (float) r / radius;
+            int a = (int)(alpha * (1 - p * 0.8)); // giảm dần chậm hơn
+            if (a <= 0) continue;
+            // Thêm chút xanh trắng ở tâm để sáng hơn
+            int color = (a << 24) | neonBlue;
+            // Tăng kích thước vùng sáng
+            int glowRadius = r + 2;
+            context.fill(pt[0] - glowRadius, pt[1] - glowRadius,
+                         pt[0] + glowRadius, pt[1] + glowRadius, color);
         }
     }
+}
 
     private void drawSettings(DrawContext context, Module module, int x, int y) {
         List<Setting> settings = getSettingsFromModule(module);
