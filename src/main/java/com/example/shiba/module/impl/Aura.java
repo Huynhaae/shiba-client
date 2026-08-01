@@ -7,6 +7,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
+import com.example.shiba.module.settings.ModeSetting;
+import com.example.shiba.module.settings.BooleanSetting;
 
 public class Aura extends Module {
 
