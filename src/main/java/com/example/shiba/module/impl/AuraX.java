@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AuraX extends Module {
+    // Settings
     private final ModeSetting mode = new ModeSetting("Mode", "Silent", "Silent", "Normal", "None");
     private final NumberSetting minCPS = new NumberSetting("MinCPS", 6.0, 12.0, 8.0, 0.5);
     private final NumberSetting maxCPS = new NumberSetting("MaxCPS", 10.0, 20.0, 14.0, 0.5);
@@ -36,11 +37,9 @@ public class AuraX extends Module {
     private long lastAttackTime = 0;
     private LivingEntity target = null;
     private double currentCPS = 10.0;
-    private float lastYaw = 0;
-    private float lastPitch = 0;
 
     public AuraX() {
-        super("AuraX", "KillAura nâng cao với Silent Rotation thực sự", Category.COMBAT);
+        super("AuraX", "KillAura với Timing Crit & Silent Rotation", Category.COMBAT);
     }
 
     @Override
@@ -59,27 +58,7 @@ public class AuraX extends Module {
         long delay = (long) (1000 / currentCPS);
         if (now - lastAttackTime < delay) return;
 
-        // Nếu chọn chế độ Silent, chỉ xoay client-side và KHÔNG gửi packet
-        if (mode.getValue().equals("Silent")) {
-            // Lưu góc hiện tại (khôi phục sau khi đánh)
-            lastYaw = mc.player.getYaw();
-            lastPitch = mc.player.getPitch();
-
-            // Xoay local
-            rotateToTarget(mc, target);
-
-            // Tấn công
-            attack(mc, target);
-
-            // Khôi phục góc cũ ngay lập tức → server vẫn thấy bạn quay hướng cũ
-            mc.player.setYaw(lastYaw);
-            mc.player.setPitch(lastPitch);
-
-            lastAttackTime = now;
-            return;
-        }
-
-        // Các chế độ khác (Normal, None)
+        // Chỉ xoay nếu mode != None
         if (!mode.getValue().equals("None")) {
             rotateToTarget(mc, target);
         }
@@ -87,9 +66,13 @@ public class AuraX extends Module {
         boolean shouldAttack = false;
         if (autoCrit.getValue()) {
             if (critMode.getValue().equals("Timing")) {
-                if (isAboutToLand(mc)) shouldAttack = true;
-            } else {
-                if (mc.player.isOnGround()) shouldAttack = true;
+                if (isAboutToLand(mc)) {
+                    shouldAttack = true;
+                }
+            } else { // Standard
+                if (mc.player.isOnGround()) {
+                    shouldAttack = true;
+                }
             }
         } else {
             shouldAttack = true;
@@ -121,7 +104,7 @@ public class AuraX extends Module {
 
         double r = range.getValue();
         Box box = new Box(player.getX() - r, player.getY() - r, player.getZ() - r,
-                player.getX() + r, player.getY() + r, player.getZ() + r);
+                          player.getX() + r, player.getY() + r, player.getZ() + r);
 
         List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, box, e -> e != player);
 
@@ -155,6 +138,8 @@ public class AuraX extends Module {
         double pitch = -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
+        // Silent: chỉ set client-side (không gửi packet)
+        // Normal: set bình thường
         mc.player.setYaw((float) yaw);
         mc.player.setPitch((float) pitch);
     }
@@ -175,5 +160,10 @@ public class AuraX extends Module {
             }
         }
         return false;
+    }
+
+    // Phương thức để mixin gọi
+    public String getMode() {
+        return mode.getValue();
     }
 }
