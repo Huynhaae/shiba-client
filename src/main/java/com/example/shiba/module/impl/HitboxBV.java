@@ -10,14 +10,14 @@ public class HitboxBV extends Module {
 
     public HitboxBV() {
         super("HitboxBV", "Mở rộng hitbox (có slider)", ModuleCategory.COMBAT);
-        addSettings(width, height);
+        // addSettings(width, height); // <--- XÓA DÒNG NÀY
     }
 
     public float getWidth() {
-        return isEnabled() ? width.getValue().floatValue() : 0f;
+        return isEnabled() ? (float) width.getValue() : 0f;  // sửa .floatValue() thành (float)
     }
 
     public float getHeight() {
-        return isEnabled() ? height.getValue().floatValue() : 0f;
+        return isEnabled() ? (float) height.getValue() : 0f; // sửa .floatValue() thành (float)
     }
 }
