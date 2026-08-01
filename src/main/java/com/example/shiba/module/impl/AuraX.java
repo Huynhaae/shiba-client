@@ -167,9 +167,9 @@ public class AuraX extends Module {
         );
 
         // Tạm thời bỏ qua chặn để gửi packet xoay
-       MixinClientConnection.setIgnoreLookPackets(true);
+        MixinClientConnection.setIgnoreLookPackets(true);
         mc.player.networkHandler.sendPacket(packet);
-        MixinClientConnection.ignoreLookPackets = false;
+        MixinClientConnection.setIgnoreLookPackets(false);
     }
 
     private boolean isAboutToLand(MinecraftClient mc) {
