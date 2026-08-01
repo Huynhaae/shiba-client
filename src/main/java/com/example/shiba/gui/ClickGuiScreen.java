@@ -26,6 +26,10 @@ public class ClickGuiScreen extends Screen {
     private boolean waitingForKeybind = false;
     private Module keybindModule = null;
 
+    // Danh sách vị trí chuột để tạo hiệu ứng đuôi
+    private final List<int[]> trailPoints = new ArrayList<>();
+    private static final int TRAIL_LENGTH = 20;
+
     private static final int BG_COLOR = 0xFF1A1A1A;
     private static final int PANEL_COLOR = 0xFF2A2A2A;
     private static final int HOVER_COLOR = 0xFF3A3A3A;
@@ -59,8 +63,14 @@ public class ClickGuiScreen extends Screen {
         this.mouseY = mouseY;
         this.renderBackground(context, mouseX, mouseY, delta);
 
-        // Vệt sáng mờ nhạt theo chuột
-        drawGlow(context, mouseX, mouseY);
+        // Cập nhật trail points
+        trailPoints.add(new int[]{mouseX, mouseY});
+        if (trailPoints.size() > TRAIL_LENGTH) {
+            trailPoints.remove(0);
+        }
+
+        // Vẽ hiệu ứng đuôi mờ (blur animation)
+        drawTrailGlow(context);
 
         int x = 10;
         int y = 35 + scrollY;
@@ -108,13 +118,20 @@ public class ClickGuiScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
     }
 
-    private void drawGlow(DrawContext context, int x, int y) {
-        int maxRadius = 60;
-        for (int r = maxRadius; r > 0; r -= 3) {
-            int alpha = (int)(30 * (1 - (double)r / maxRadius));
-            if (alpha <= 0) continue;
-            int color = (alpha << 24) | 0xFFFFFF;
-            context.fill(x - r, y - r, x + r, y + r, color);
+    // Hiệu ứng đuôi mờ dần (blur trail)
+    private void drawTrailGlow(DrawContext context) {
+        int size = trailPoints.size();
+        if (size < 2) return;
+
+        for (int i = 0; i < size; i++) {
+            int[] pt = trailPoints.get(i);
+            // Độ trong suốt tăng dần theo thời gian (i càng gần cuối càng đậm)
+            float progress = (float) i / size; // 0 -> 1
+            float alpha = 20 + 60 * progress; // 20 -> 80
+            int radius = 30 + (int)(20 * progress); // 30 -> 50
+
+            int color = ((int)alpha << 24) | 0xFFFFFF;
+            context.fill(pt[0] - radius, pt[1] - radius, pt[0] + radius, pt[1] + radius, color);
         }
     }
 
