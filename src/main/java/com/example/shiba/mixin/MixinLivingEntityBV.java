@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(LivingEntity.class)
+@Mixin(Entity.class)
 public class MixinLivingEntityBV {
 
     @Inject(method = "getBoundingBox", at = @At("RETURN"), cancellable = true)
