@@ -5,6 +5,10 @@ public abstract class Module {
     private final String description;
     private final Category category;
     private boolean enabled;
+    private int keybind = 0;
+
+public int getKeybind() { return keybind; }
+public void setKeybind(int key) { this.keybind = key; }
 
     public int keyCode = -1;
     private boolean keyWasDown = false;
