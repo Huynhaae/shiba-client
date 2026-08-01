@@ -11,6 +11,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -68,19 +69,21 @@ public class AuraX extends Module {
         ClientPlayerEntity player = mc.player;
         if (world == null || player == null) return null;
 
-        List<LivingEntity> entities = world.getEntities()
-                .stream()
-                .filter(e -> e instanceof LivingEntity && e != player)
-                .map(e -> (LivingEntity) e)
-                .filter(e -> {
-                    if (onlyPlayers.getValue()) {
-                        return e instanceof PlayerEntity;
-                    } else {
-                        return e instanceof PlayerEntity || e instanceof MobEntity;
-                    }
-                })
-                .filter(e -> e.distanceTo(player) <= range.getValue())
-                .collect(Collectors.toList());
+        double r = range.getValue();
+        Box box = new Box(player.getX() - r, player.getY() - r, player.getZ() - r,
+                          player.getX() + r, player.getY() + r, player.getZ() + r);
+
+        List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, box, e -> e != player);
+
+        if (onlyPlayers.getValue()) {
+            entities = entities.stream()
+                    .filter(e -> e instanceof PlayerEntity)
+                    .collect(Collectors.toList());
+        } else {
+            entities = entities.stream()
+                    .filter(e -> e instanceof PlayerEntity || e instanceof MobEntity)
+                    .collect(Collectors.toList());
+        }
 
         if (!throughWalls.getValue()) {
             entities = entities.stream()
