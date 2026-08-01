@@ -118,22 +118,25 @@ public class ClickGuiScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
     }
 
-    // Hiệu ứng đuôi mờ dần (blur trail)
-    private void drawTrailGlow(DrawContext context) {
-        int size = trailPoints.size();
-        if (size < 2) return;
+private void drawTrailGlow(DrawContext context) {
+    int size = trailPoints.size();
+    if (size < 2) return;
 
-        for (int i = 0; i < size; i++) {
-            int[] pt = trailPoints.get(i);
-            // Độ trong suốt tăng dần theo thời gian (i càng gần cuối càng đậm)
-            float progress = (float) i / size; // 0 -> 1
-            float alpha = 20 + 60 * progress; // 20 -> 80
-            int radius = 30 + (int)(20 * progress); // 30 -> 50
+    for (int i = 0; i < size; i++) {
+        int[] pt = trailPoints.get(i);
+        float progress = (float) i / size;
+        int alpha = (int)(30 + 80 * progress);
+        int radius = 20 + (int)(35 * progress);
 
-            int color = ((int)alpha << 24) | 0xFFFFFF;
-            context.fill(pt[0] - radius, pt[1] - radius, pt[0] + radius, pt[1] + radius, color);
+        for (int r = radius; r > 0; r -= 2) {
+            float p = (float) r / radius;
+            int a = (int)(alpha * (1 - p * p));
+            if (a <= 0) continue;
+            int color = (a << 24) | 0x32CD32; 
+            context.fill(pt[0] - r, pt[1] - r, pt[0] + r, pt[1] + r, color);
         }
     }
+}
 
     private void drawSettings(DrawContext context, Module module, int x, int y) {
         List<Setting> settings = getSettingsFromModule(module);
