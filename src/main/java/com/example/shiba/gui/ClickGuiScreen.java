@@ -90,7 +90,8 @@ public class ClickGuiScreen extends Screen {
         case VISUAL -> "Visual";
         case RENDER -> "Render";
         case HUD -> "HUD";
-        // thiếu MISC và default
+        case MISC -> "Misc";   // thêm nếu có
+        default -> "Unknown";  // thêm default để an toàn
     };
 }
 
