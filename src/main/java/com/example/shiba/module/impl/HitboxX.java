@@ -3,7 +3,6 @@ package com.example.shiba.module.impl;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
-import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
 
 public class HitboxX extends Module {
@@ -17,11 +16,11 @@ public class HitboxX extends Module {
     }
 
     public float getWidth() {
-        return isEnabled() ? width.getValue().floatValue() : 0f;
+        return isEnabled() ? (float) width.getValue() : 0f;
     }
 
     public float getHeight() {
-        return isEnabled() ? height.getValue().floatValue() : 0f;
+        return isEnabled() ? (float) height.getValue() : 0f;
     }
 
     public boolean isSilentAim() {
