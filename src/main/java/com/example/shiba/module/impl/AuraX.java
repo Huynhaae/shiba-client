@@ -37,8 +37,6 @@ public class AuraX extends Module {
     private long lastAttackTime = 0;
     private LivingEntity target = null;
     private double currentCPS = 10.0;
-    private boolean wasOnGround = true;
-    private double lastY = 0;
 
     public AuraX() {
         super("AuraX", "KillAura với Timing Crit & No Rotation", Category.COMBAT);
@@ -60,20 +58,20 @@ public class AuraX extends Module {
         long delay = (long) (1000 / currentCPS);
         if (now - lastAttackTime < delay) return;
 
-        // Rotation - giữ nguyên hướng nhìn nếu chọn None
+        // Rotation – chỉ xoay nếu mode không phải None
         if (!mode.getValue().equals("None")) {
             rotateToTarget(mc, target);
         }
-        // Nếu chọn None, không xoay gì cả, nhưng vẫn tấn công (có thể không trúng trên server chặt)
 
-        // AutoCrit logic
+        // Quyết định tấn công
         boolean shouldAttack = false;
         if (autoCrit.getValue()) {
             if (critMode.getValue().equals("Timing")) {
-                // Đánh khi đang rơi và sắp chạm đất (khoảng cách < 0.3 block)
+                // Chỉ đánh khi đang rơi và sắp chạm đất
                 if (isAboutToLand(mc)) {
                     shouldAttack = true;
                 }
+                // Không đánh nếu đang đứng yên hoặc trên không cách xa đất
             } else { // Standard
                 if (mc.player.isOnGround()) {
                     shouldAttack = true;
@@ -149,15 +147,10 @@ public class AuraX extends Module {
         mc.player.setPitch((float) pitch);
     }
 
-    /**
-     * Kiểm tra xem player có sắp chạm đất không (trong vòng 1 tick)
-     * Bằng cách tính vận tốc và khoảng cách xuống đất
-     */
     private boolean isAboutToLand(MinecraftClient mc) {
         if (mc.player == null) return false;
-        // Nếu đang rơi
+        // Chỉ đánh nếu đang rơi và sắp chạm đất
         if (mc.player.getVelocity().y < 0) {
-            // Lấy raycast xuống dưới
             Vec3d start = mc.player.getPos();
             Vec3d end = start.add(0, -2, 0);
             RaycastContext context = new RaycastContext(start, end,
@@ -167,8 +160,8 @@ public class AuraX extends Module {
             BlockHitResult hit = mc.world.raycast(context);
             if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
                 double distance = start.y - hit.getPos().y;
-                // Nếu khoảng cách < 0.3 và vận tốc Y > -0.5 (sắp chạm đất)
-                return distance < 0.3 && mc.player.getVelocity().y > -0.5;
+                // Khoảng cách < 0.3 và > 0.01 (chưa chạm đất) và vận tốc Y âm đáng kể
+                return distance < 0.3 && distance > 0.01 && mc.player.getVelocity().y < -0.1;
             }
         }
         return false;
