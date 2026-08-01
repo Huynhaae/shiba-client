@@ -5,7 +5,8 @@
   "client": [
     "MixinLivingEntityBV",
     "MixinEntity",
-    "MixinPlayerEntity"
+    "MixinPlayerEntity",
+    "MixinLivingEntityBV"
   ],
   "injectors": {
     "defaultRequire": 1
