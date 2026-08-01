@@ -1,11 +1,11 @@
 package com.example.shiba.module.impl;
 
-import com.example.shiba.util.PacketBlocker;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
+import com.example.shiba.util.PacketBlocker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
@@ -156,7 +156,6 @@ public class AuraX extends Module {
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // Tạo packet Full (vị trí + góc + onGround)
         PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.Full(
             mc.player.getX(),
             mc.player.getY(),
@@ -167,9 +166,9 @@ public class AuraX extends Module {
         );
 
         // Tạm thời bỏ qua chặn để gửi packet xoay
-        MixinClientConnection.setIgnoreLookPackets(true);
+        PacketBlocker.setIgnoreLookPackets(true);
         mc.player.networkHandler.sendPacket(packet);
-        MixinClientConnection.setIgnoreLookPackets(false);
+        PacketBlocker.setIgnoreLookPackets(false);
     }
 
     private boolean isAboutToLand(MinecraftClient mc) {
