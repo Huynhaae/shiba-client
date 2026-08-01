@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AuraX extends Module {
-    // Settings
     private final ModeSetting mode = new ModeSetting("Mode", "Silent", "Silent", "Normal", "None");
     private final NumberSetting minCPS = new NumberSetting("MinCPS", 6.0, 12.0, 8.0, 0.5);
     private final NumberSetting maxCPS = new NumberSetting("MaxCPS", 10.0, 20.0, 14.0, 0.5);
@@ -37,9 +36,11 @@ public class AuraX extends Module {
     private long lastAttackTime = 0;
     private LivingEntity target = null;
     private double currentCPS = 10.0;
+    private float lastYaw = 0;
+    private float lastPitch = 0;
 
     public AuraX() {
-        super("AuraX", "KillAura với Timing Crit & No Rotation", Category.COMBAT);
+        super("AuraX", "KillAura nâng cao với Silent Rotation thực sự", Category.COMBAT);
     }
 
     @Override
@@ -58,24 +59,37 @@ public class AuraX extends Module {
         long delay = (long) (1000 / currentCPS);
         if (now - lastAttackTime < delay) return;
 
-        // Rotation – chỉ xoay nếu mode không phải None
+        // Nếu chọn chế độ Silent, chỉ xoay client-side và KHÔNG gửi packet
+        if (mode.getValue().equals("Silent")) {
+            // Lưu góc hiện tại (khôi phục sau khi đánh)
+            lastYaw = mc.player.getYaw();
+            lastPitch = mc.player.getPitch();
+
+            // Xoay local
+            rotateToTarget(mc, target);
+
+            // Tấn công
+            attack(mc, target);
+
+            // Khôi phục góc cũ ngay lập tức → server vẫn thấy bạn quay hướng cũ
+            mc.player.setYaw(lastYaw);
+            mc.player.setPitch(lastPitch);
+
+            lastAttackTime = now;
+            return;
+        }
+
+        // Các chế độ khác (Normal, None)
         if (!mode.getValue().equals("None")) {
             rotateToTarget(mc, target);
         }
 
-        // Quyết định tấn công
         boolean shouldAttack = false;
         if (autoCrit.getValue()) {
             if (critMode.getValue().equals("Timing")) {
-                // Chỉ đánh khi đang rơi và sắp chạm đất
-                if (isAboutToLand(mc)) {
-                    shouldAttack = true;
-                }
-                // Không đánh nếu đang đứng yên hoặc trên không cách xa đất
-            } else { // Standard
-                if (mc.player.isOnGround()) {
-                    shouldAttack = true;
-                }
+                if (isAboutToLand(mc)) shouldAttack = true;
+            } else {
+                if (mc.player.isOnGround()) shouldAttack = true;
             }
         } else {
             shouldAttack = true;
@@ -141,19 +155,12 @@ public class AuraX extends Module {
         double pitch = -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // Nếu mode là Silent, chỉ set client-side (không gửi packet)
-        // Nếu mode Normal, set bình thường (có gửi packet)
         mc.player.setYaw((float) yaw);
         mc.player.setPitch((float) pitch);
     }
 
-    public String getMode() {
-    return mode.getValue();
-}
-
     private boolean isAboutToLand(MinecraftClient mc) {
         if (mc.player == null) return false;
-        // Chỉ đánh nếu đang rơi và sắp chạm đất
         if (mc.player.getVelocity().y < 0) {
             Vec3d start = mc.player.getPos();
             Vec3d end = start.add(0, -2, 0);
@@ -164,7 +171,6 @@ public class AuraX extends Module {
             BlockHitResult hit = mc.world.raycast(context);
             if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
                 double distance = start.y - hit.getPos().y;
-                // Khoảng cách < 0.3 và > 0.01 (chưa chạm đất) và vận tốc Y âm đáng kể
                 return distance < 0.3 && distance > 0.01 && mc.player.getVelocity().y < -0.1;
             }
         }
