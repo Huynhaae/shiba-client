@@ -82,14 +82,17 @@ public class ClickGuiScreen extends Screen {
         return tabsBottom + rowsHeight + PADDING;
     }
 
-    private String categoryLabel(Category c) {
-        return switch (c) {
-            case COMBAT -> "PVP";
-            case MOVEMENT -> "Move";
-            case RENDER -> "Render";
-            case HUD -> "HUD";
-        };
-    }
+ private String categoryLabel(Category c) {
+    return switch (c) {
+        case COMBAT -> "Combat";
+        case MOVEMENT -> "Movement";
+        case PLAYER -> "Player";
+        case VISUAL -> "Visual";
+        case RENDER -> "Render";
+        case HUD -> "HUD";
+        // thiếu MISC và default
+    };
+}
 
     private Text labelFor(Module module) {
         String state = module.isEnabled() ? "ON" : "OFF";
