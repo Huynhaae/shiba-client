@@ -36,9 +36,15 @@ public class AuraX extends Module {
     private final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     private final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
 
+    // Biến runtime
     private long lastAttackTime = 0;
     private LivingEntity target = null;
     private double currentCPS = 10.0;
+
+    // Biến cho Silent Rotation mượt mà
+    private long lastFakeRotationTime = 0;
+    private float lastYaw = 0;
+    private float lastPitch = 0;
 
     public AuraX() {
         super("AuraX", "KillAura với Timing Crit & Silent Rotation", Category.COMBAT);
@@ -62,12 +68,14 @@ public class AuraX extends Module {
 
         String currentMode = mode.getValue();
 
+        // Xử lý rotation theo chế độ
         if (currentMode.equals("Silent")) {
             sendFakeRotation(mc, target);
         } else if (!currentMode.equals("None")) {
             rotateToTarget(mc, target);
         }
 
+        // Quyết định tấn công
         boolean shouldAttack = false;
         if (autoCrit.getValue()) {
             if (critMode.getValue().equals("Timing")) {
@@ -147,6 +155,12 @@ public class AuraX extends Module {
         mc.player.setPitch((float) pitch);
     }
 
+    /**
+     * Silent Rotation: Gửi packet xoay giả nhưng không xoay camera thật.
+     * - Chỉ gửi khi góc thay đổi > 2° (tránh spam)
+     * - Giới hạn tần suất 5 lần/giây (200ms)
+     * - Giúp server thấy bạn xoay nhưng camera vẫn tự do
+     */
     private void sendFakeRotation(MinecraftClient mc, LivingEntity target) {
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
@@ -155,6 +169,21 @@ public class AuraX extends Module {
         float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
+
+        // Chỉ gửi nếu góc thay đổi đáng kể (tránh spam packet)
+        if (Math.abs(yaw - lastYaw) < 2.0f && Math.abs(pitch - lastPitch) < 1.0f) {
+            return;
+        }
+
+        // Giới hạn tần suất gửi (tối đa 5 lần/giây để tránh bị anticheat phạt)
+        long now = System.currentTimeMillis();
+        if (now - lastFakeRotationTime < 200) {
+            return;
+        }
+
+        lastYaw = yaw;
+        lastPitch = pitch;
+        lastFakeRotationTime = now;
 
         PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.Full(
             mc.player.getX(),
@@ -165,7 +194,7 @@ public class AuraX extends Module {
             mc.player.isOnGround()
         );
 
-        // Tạm thời bỏ qua chặn để gửi packet xoay
+        // Bỏ qua chặn packet để gửi xoay giả
         PacketBlocker.setIgnoreLookPackets(true);
         mc.player.networkHandler.sendPacket(packet);
         PacketBlocker.setIgnoreLookPackets(false);
