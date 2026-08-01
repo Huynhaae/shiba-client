@@ -6,7 +6,6 @@ import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
-import com.example.shiba.mixin.MixinClientConnection;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
