@@ -8,22 +8,19 @@ import com.example.shiba.module.settings.BooleanSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
 
 public class CritX extends Module {
-    // Settings
-    private final ModeSetting mode = new ModeSetting("Mode", "Timing", "Timing", "Standard", "Blatant");
-    private final NumberSetting delay = new NumberSetting("Delay (ms)", 0, 500, 100, 10);
-    private final BooleanSetting onlyOnGround = new BooleanSetting("OnlyOnGround", true);
-    private final BooleanSetting autoJump = new BooleanSetting("AutoJump", true);
-    private final NumberSetting range = new NumberSetting("Range", 3.0, 6.0, 4.5, 0.1);
+    // Settings – public để GUI có thể truy cập
+    public final ModeSetting mode = new ModeSetting("Mode", "Timing", "Timing", "Standard", "Blatant");
+    public final NumberSetting delay = new NumberSetting("Delay (ms)", 0, 500, 100, 10);
+    public final BooleanSetting onlyOnGround = new BooleanSetting("OnlyOnGround", true);
+    public final BooleanSetting autoJump = new BooleanSetting("AutoJump", true);
+    public final NumberSetting range = new NumberSetting("Range", 3.0, 6.0, 4.5, 0.1);
 
     private long lastAttackTime = 0;
 
     public CritX() {
         super("CritX", "Critical hits với nhiều chế độ bypass", Category.COMBAT);
-        addSettings(mode, delay, onlyOnGround, autoJump, range);
     }
 
     @Override
@@ -33,7 +30,6 @@ public class CritX extends Module {
 
         ClientPlayerEntity player = mc.player;
 
-        // Chỉ đánh khi đang nhấn chuột trái và có mục tiêu
         if (!mc.options.attackKey.isPressed()) return;
         if (mc.targetedEntity == null) return;
         if (player.distanceTo(mc.targetedEntity) > range.getValue()) return;
@@ -46,16 +42,12 @@ public class CritX extends Module {
 
         switch (modeName) {
             case "Timing":
-                // Chỉ crit khi sắp chạm đất (đang rơi và gần đất)
-                if (player.getVelocity().y < 0 && !player.isOnGround()) {
-                    if (isAboutToLand(mc)) {
-                        shouldCrit = true;
-                    }
+                if (player.getVelocity().y < 0 && !player.isOnGround() && isAboutToLand(mc)) {
+                    shouldCrit = true;
                 }
                 break;
 
             case "Standard":
-                // Standard: nhảy và đánh khi rơi
                 if (autoJump.getValue() && player.isOnGround()) {
                     player.jump();
                 }
@@ -65,21 +57,17 @@ public class CritX extends Module {
                 break;
 
             case "Blatant":
-                // Blatant: luôn crit, nhảy liên tục, đánh bất kể trạng thái
                 if (autoJump.getValue()) {
                     player.jump();
                 }
-                // Crit khi đang rơi hoặc vừa nhảy
                 if (player.fallDistance > 0.1 || player.getVelocity().y < 0) {
                     shouldCrit = true;
                 } else {
-                    // Vẫn đánh nhưng không crit để tránh bị kick
                     shouldCrit = true;
                 }
                 break;
         }
 
-        // Điều kiện bổ sung: nếu đang trên mặt đất và yêu cầu chỉ đánh khi đứng, không crit
         if (onlyOnGround.getValue() && player.isOnGround()) {
             shouldCrit = false;
         }
@@ -94,7 +82,6 @@ public class CritX extends Module {
     private boolean isAboutToLand(MinecraftClient mc) {
         ClientPlayerEntity player = mc.player;
         if (player == null) return false;
-        // Dự đoán chạm đất: khoảng cách tới block dưới chân < 0.5
         double y = player.getY();
         for (int i = 1; i <= 3; i++) {
             double checkY = y - i * 0.2;
