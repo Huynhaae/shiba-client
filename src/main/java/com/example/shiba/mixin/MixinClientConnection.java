@@ -13,7 +13,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientConnection.class)
 public class MixinClientConnection {
 
-    public static boolean ignoreLookPackets = false;
+    private static boolean ignoreLookPackets = false;
+
+    public static void setIgnoreLookPackets(boolean value) {
+        ignoreLookPackets = value;
+    }
+
+    public static boolean shouldIgnoreLookPackets() {
+        return ignoreLookPackets;
+    }
 
     @Inject(method = "send(Lnet/minecraft/network/packet/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
