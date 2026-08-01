@@ -5,6 +5,7 @@ import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -32,14 +33,14 @@ public class AuraX extends Module {
 
     public AuraX() {
         super("AuraX", "KillAura nâng cao với nhiều chế độ", Category.COMBAT);
-        addSettings(mode, cps, range, autoCrit, silentRot, onlyPlayers, throughWalls);
     }
 
     @Override
     public void onTick() {
+        MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
 
-        target = findTarget();
+        target = findTarget(mc);
         if (target == null) return;
 
         double dist = mc.player.distanceTo(target);
@@ -50,9 +51,7 @@ public class AuraX extends Module {
         if (now - lastAttackTime < delay) return;
 
         if (mode.getValue().equals("Silent") || silentRot.getValue()) {
-            rotateToTarget(target, false);
-        } else {
-            rotateToTarget(target, true);
+            rotateToTarget(mc, target);
         }
 
         if (autoCrit.getValue() && mc.player.isOnGround()) {
@@ -64,7 +63,7 @@ public class AuraX extends Module {
         lastAttackTime = now;
     }
 
-    private LivingEntity findTarget() {
+    private LivingEntity findTarget(MinecraftClient mc) {
         World world = mc.world;
         ClientPlayerEntity player = mc.player;
         if (world == null || player == null) return null;
@@ -85,7 +84,7 @@ public class AuraX extends Module {
 
         if (!throughWalls.getValue()) {
             entities = entities.stream()
-                    .filter(e -> mc.player.canSee(e))
+                    .filter(player::canSee)
                     .collect(Collectors.toList());
         }
 
@@ -94,14 +93,13 @@ public class AuraX extends Module {
                 .orElse(null);
     }
 
-    private void rotateToTarget(LivingEntity target, boolean sendPacket) {
+    private void rotateToTarget(MinecraftClient mc, LivingEntity target) {
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
         Vec3d diff = targetPos.subtract(playerPos);
 
         double yaw = Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90;
         double pitch = -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
-
         pitch = MathHelper.clamp(pitch, -90, 90);
 
         mc.player.setYaw((float) yaw);
