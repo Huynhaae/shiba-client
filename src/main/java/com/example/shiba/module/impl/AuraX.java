@@ -156,14 +156,17 @@ public class AuraX extends Module {
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // Gửi packet với vị trí hiện tại và góc xoay
-        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket(
-            mc.player.getX(), mc.player.getY(), mc.player.getZ(),
-            yaw, pitch,
-            mc.player.isOnGround(),
-            true, true
+        // Tạo packet Full (vị trí + góc + onGround)
+        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.Full(
+            mc.player.getX(),
+            mc.player.getY(),
+            mc.player.getZ(),
+            yaw,
+            pitch,
+            mc.player.isOnGround()
         );
 
+        // Tạm thời bỏ qua chặn để gửi packet xoay
         MixinClientConnection.ignoreLookPackets = true;
         mc.player.networkHandler.sendPacket(packet);
         MixinClientConnection.ignoreLookPackets = false;
