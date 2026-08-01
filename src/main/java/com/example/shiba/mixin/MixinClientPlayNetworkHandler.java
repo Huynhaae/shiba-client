@@ -17,11 +17,12 @@ public class MixinClientPlayNetworkHandler {
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
         AuraX aura = ModuleManager.AURAX;
         if (aura != null && aura.isEnabled() && aura.getMode().equals("Silent")) {
-            // Chặn tất cả packet xoay người để server không thấy
-            if (packet instanceof PlayerMoveC2SPacket.LookOnly ||
-                packet instanceof PlayerMoveC2SPacket.PositionAndOnGround ||
-                packet instanceof PlayerMoveC2SPacket.Full) {
-                ci.cancel();
+            if (packet instanceof PlayerMoveC2SPacket) {
+                PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
+                // Chỉ chặn nếu packet có thay đổi góc (look), không chặn di chuyển
+                if (movePacket.changesLook()) {
+                    ci.cancel();
+                }
             }
         }
     }
