@@ -5,6 +5,7 @@ import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
+import com.example.shiba.mixin.MixinClientConnection;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
@@ -18,6 +19,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 
 import java.util.Comparator;
 import java.util.List;
@@ -58,8 +60,12 @@ public class AuraX extends Module {
         long delay = (long) (1000 / currentCPS);
         if (now - lastAttackTime < delay) return;
 
-        // Chỉ xoay nếu mode != None
-        if (!mode.getValue().equals("None")) {
+        String currentMode = mode.getValue();
+
+        // Silent: gửi packet xoay giả, không xoay camera thật
+        if (currentMode.equals("Silent")) {
+            sendFakeRotation(mc, target);
+        } else if (!currentMode.equals("None")) {
             rotateToTarget(mc, target);
         }
 
@@ -69,7 +75,7 @@ public class AuraX extends Module {
                 if (isAboutToLand(mc)) {
                     shouldAttack = true;
                 }
-            } else { // Standard
+            } else {
                 if (mc.player.isOnGround()) {
                     shouldAttack = true;
                 }
@@ -138,10 +144,23 @@ public class AuraX extends Module {
         double pitch = -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // Silent: chỉ set client-side (không gửi packet)
-        // Normal: set bình thường
         mc.player.setYaw((float) yaw);
         mc.player.setPitch((float) pitch);
+    }
+
+    private void sendFakeRotation(MinecraftClient mc, LivingEntity target) {
+        Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
+        Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
+        Vec3d diff = targetPos.subtract(playerPos);
+
+        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
+        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
+        pitch = MathHelper.clamp(pitch, -90, 90);
+
+        // Tạm thời bỏ qua chặn để gửi packet xoay
+        MixinClientConnection.ignoreLookPackets = true;
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookOnly(yaw, pitch, mc.player.isOnGround()));
+        MixinClientConnection.ignoreLookPackets = false;
     }
 
     private boolean isAboutToLand(MinecraftClient mc) {
@@ -162,7 +181,6 @@ public class AuraX extends Module {
         return false;
     }
 
-    // Phương thức để mixin gọi
     public String getMode() {
         return mode.getValue();
     }
