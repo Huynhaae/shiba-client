@@ -12,6 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,8 @@ public class ClickGuiScreen extends Screen {
     private Module selectedModule = null;
     private int scrollY = 0;
     private int mouseX, mouseY;
+    private boolean waitingForKeybind = false;
+    private Module keybindModule = null;
 
     public ClickGuiScreen() {
         super(Text.literal("Shiba Client"));
@@ -70,16 +73,30 @@ public class ClickGuiScreen extends Screen {
                           hovered ? 0xFF555577 : 0xFF333355;
             context.fill(x, y, x + rowW, y + rowH, bgColor);
 
-            String name = module.getName();
-            int color = module.isEnabled() ? 0x00FF00 : 0xFF8888;
-            context.drawText(textRenderer, name, x + 4, y + 5, color, false);
+            String displayName = module.getName();
+            if (module.isEnabled()) {
+                context.drawText(textRenderer, displayName, x + 4, y + 5, 0x00FF00, false);
+            } else {
+                context.drawText(textRenderer, displayName, x + 4, y + 5, 0xFF8888, false);
+            }
+
+            // Hiển thị keybind (nếu có)
+            int keyCode = module.getKeybind();
+            String keyName = keyCode == 0 ? "None" : GLFW.glfwGetKeyName(keyCode, 0);
+            if (keyName == null) keyName = "Unknown";
+            context.drawText(textRenderer, keyName, x + rowW - textRenderer.getWidth(keyName) - 4, y + 5, 0xAAAAAA, false);
 
             y += rowH + spacing;
         }
 
+        // Vẽ settings
         if (selectedModule != null) {
             context.drawText(textRenderer, selectedModule.getName() + " Settings", x + rowW + 20, 25, 0xFFFFFF, false);
-            drawSettings(context, selectedModule, x + rowW + 20, 35);
+            drawSettings(context, selectedModule, x + rowW + 20, 40);
+        }
+
+        if (waitingForKeybind) {
+            context.drawText(textRenderer, "Press any key for " + keybindModule.getName(), width/2 - 100, height/2 - 10, 0xFFFFFF, false);
         }
 
         super.render(context, mouseX, mouseY, delta);
@@ -95,13 +112,13 @@ public class ClickGuiScreen extends Screen {
         for (Setting setting : settings) {
             if (setting instanceof NumberSetting ns) {
                 drawNumberSetting(context, ns, x, y);
-                y += 25;
+                y += 30;
             } else if (setting instanceof ModeSetting ms) {
                 drawModeSetting(context, ms, x, y);
-                y += 25;
+                y += 20;
             } else if (setting instanceof BooleanSetting bs) {
                 drawBooleanSetting(context, bs, x, y);
-                y += 25;
+                y += 20;
             }
         }
     }
@@ -123,26 +140,25 @@ public class ClickGuiScreen extends Screen {
 
     private void drawNumberSetting(DrawContext context, NumberSetting ns, int x, int y) {
         int w = 150;
-        int h = 12;
+        int h = 10;
         double value = ns.getValue();
         double min = ns.getMin();
         double max = ns.getMax();
         double percent = (value - min) / (max - min);
 
         String text = ns.getName() + ": " + String.format("%.2f", value);
-        context.drawText(textRenderer, text, x, y - 2, 0xFFFFFF, false);
+        context.drawText(textRenderer, text, x, y, 0xFFFFFF, false);
 
         int sliderY = y + 12;
         context.fill(x, sliderY, x + w, sliderY + h, 0xFF333333);
         int fillW = (int)(w * percent);
         context.fill(x, sliderY, x + fillW, sliderY + h, 0xFF00AA00);
 
-        if (mouseX >= x && mouseX <= x + w &&
-            mouseY >= sliderY && mouseY <= sliderY + h) {
-            double newPercent = (mouseX - x) / (double) w;
-            double newValue = min + (max - min) * newPercent;
-            ns.setValue(newValue);
-        }
+        // Lưu vị trí slider để xử lý click
+        ns.setSliderX(x);
+        ns.setSliderY(sliderY);
+        ns.setSliderWidth(w);
+        ns.setSliderHeight(h);
     }
 
     private void drawModeSetting(DrawContext context, ModeSetting ms, int x, int y) {
@@ -157,6 +173,8 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (waitingForKeybind) return false;
+
         int x = 10;
         int y = 35 + scrollY;
         int rowW = 120;
@@ -167,46 +185,56 @@ public class ClickGuiScreen extends Screen {
                 .filter(m -> m.getCategory() == selected)
                 .collect(Collectors.toList());
 
+        // Click vào danh sách module
         for (Module module : visibleModules) {
             if (mouseX >= x && mouseX <= x + rowW &&
                 mouseY >= y && mouseY <= y + rowH) {
-                if (button == 0) {
+                if (button == GLFW.GLFW_MOUSE_BUTTON_1) { // Trái → toggle
                     if (selectedModule == module) {
                         module.toggle();
                     } else {
                         selectedModule = module;
                     }
                     return true;
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_2) { // Phải → chọn để chỉnh sửa
+                    selectedModule = module;
+                    return true;
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_3) { // Giữa → set keybind
+                    waitingForKeybind = true;
+                    keybindModule = module;
+                    return true;
                 }
             }
             y += rowH + spacing;
         }
 
-        if (selectedModule != null) {
-            handleSettingsClick(selectedModule, (int) mouseX, (int) mouseY, button);
+        // Click vào settings
+        if (selectedModule != null && button == GLFW.GLFW_MOUSE_BUTTON_1) {
+            handleSettingsClick(selectedModule, (int) mouseX, (int) mouseY);
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private void handleSettingsClick(Module module, int mouseX, int mouseY, int button) {
+    private void handleSettingsClick(Module module, int mouseX, int mouseY) {
         List<Setting> settings = getSettingsFromModule(module);
         int x = 140;
-        int y = 55;
+        int y = 50;
 
         for (Setting setting : settings) {
             if (setting instanceof NumberSetting ns) {
-                int w = 150;
-                int h = 12;
-                int sliderY = y + 22;
-                if (mouseX >= x && mouseX <= x + w &&
-                    mouseY >= sliderY && mouseY <= sliderY + h) {
-                    double percent = (mouseX - x) / (double) w;
+                int sx = ns.getSliderX();
+                int sy = ns.getSliderY();
+                int sw = ns.getSliderWidth();
+                int sh = ns.getSliderHeight();
+                if (mouseX >= sx && mouseX <= sx + sw &&
+                    mouseY >= sy && mouseY <= sy + sh) {
+                    double percent = (mouseX - sx) / (double) sw;
                     double newValue = ns.getMin() + (ns.getMax() - ns.getMin()) * percent;
                     ns.setValue(newValue);
                     return;
                 }
-                y += 35;
+                y += 30;
             } else if (setting instanceof BooleanSetting bs) {
                 String text = bs.getName() + ": " + (bs.getValue() ? "ON" : "OFF");
                 int textWidth = textRenderer.getWidth(text);
@@ -215,18 +243,44 @@ public class ClickGuiScreen extends Screen {
                     bs.setValue(!bs.getValue());
                     return;
                 }
-                y += 25;
+                y += 20;
             } else if (setting instanceof ModeSetting ms) {
-                // Xử lý click chọn mode (có thể thêm nút < >)
-                y += 25;
+                String text = ms.getName() + ": " + ms.getValue();
+                int textWidth = textRenderer.getWidth(text);
+                if (mouseX >= x && mouseX <= x + textWidth &&
+                    mouseY >= y && mouseY <= y + 12) {
+                    List<String> modes = ms.getModes();
+                    int currentIndex = modes.indexOf(ms.getValue());
+                    int nextIndex = (currentIndex + 1) % modes.size();
+                    ms.setValue(modes.get(nextIndex));
+                    return;
+                }
+                y += 20;
             }
         }
     }
 
-    // SỬA QUAN TRỌNG: mouseScrolled có 4 tham số trong 1.21.1
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (waitingForKeybind) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                waitingForKeybind = false;
+                keybindModule = null;
+                return true;
+            }
+            if (keybindModule != null) {
+                keybindModule.setKeybind(keyCode);
+                waitingForKeybind = false;
+                keybindModule = null;
+                return true;
+            }
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount, double delta) {
-        scrollY += amount * 10;
+        if (!waitingForKeybind) scrollY += amount * 10;
         return super.mouseScrolled(mouseX, mouseY, amount, delta);
     }
 
