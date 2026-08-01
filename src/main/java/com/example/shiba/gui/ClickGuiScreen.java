@@ -13,7 +13,6 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,7 +26,6 @@ public class ClickGuiScreen extends Screen {
     private boolean waitingForKeybind = false;
     private Module keybindModule = null;
 
-    // Màu sắc
     private static final int BG_COLOR = 0xFF1A1A1A;
     private static final int PANEL_COLOR = 0xFF2A2A2A;
     private static final int HOVER_COLOR = 0xFF3A3A3A;
@@ -62,9 +60,10 @@ public class ClickGuiScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
-
-        // Nền đen
         this.renderBackground(context, mouseX, mouseY, delta);
+
+        // Vệt sáng blur theo chuột
+        drawGlow(context, mouseX, mouseY);
 
         int x = 10;
         int y = 35 + scrollY;
@@ -76,30 +75,18 @@ public class ClickGuiScreen extends Screen {
                 .filter(m -> m.getCategory() == selected)
                 .collect(Collectors.toList());
 
-        // Vẽ danh sách module
         for (Module module : visibleModules) {
             boolean hovered = mouseX >= x && mouseX <= x + rowW &&
                               mouseY >= y && mouseY <= y + rowH;
 
-            // Vẽ nền
             int bgColor = (module == selectedModule) ? 0xFF444466 :
                           hovered ? HOVER_COLOR : PANEL_COLOR;
             context.fill(x, y, x + rowW, y + rowH, bgColor);
 
-            // Vệt sáng khi hover (hiệu ứng glow)
-            if (hovered) {
-                // Tạo vệt sáng theo chuột
-                int glowX = mouseX - 20;
-                int glowY = mouseY - 20;
-                context.fill(glowX, glowY, glowX + 40, glowY + 40, 0x33FFFFFF);
-            }
-
-            // Tên module
             String name = module.getName();
             int color = module.isEnabled() ? ENABLED_COLOR : DISABLED_COLOR;
             context.drawText(textRenderer, name, x + 6, y + 6, color, false);
 
-            // Keybind (nếu có)
             int keyCode = module.getKeybind();
             String keyName = keyCode == 0 ? "None" : GLFW.glfwGetKeyName(keyCode, 0);
             if (keyName == null) keyName = "Unknown";
@@ -109,14 +96,12 @@ public class ClickGuiScreen extends Screen {
             y += rowH + spacing;
         }
 
-        // Vẽ settings của module được chọn
         if (selectedModule != null) {
             int settingsX = x + rowW + 20;
             context.drawText(textRenderer, selectedModule.getName() + " Settings", settingsX, 25, 0xFFFFFF, false);
             drawSettings(context, selectedModule, settingsX, 45);
         }
 
-        // Overlay keybind
         if (waitingForKeybind) {
             context.fill(0, 0, width, height, 0x88000000);
             String msg = "Press any key for " + keybindModule.getName() + " (ESC to cancel)";
@@ -124,6 +109,16 @@ public class ClickGuiScreen extends Screen {
         }
 
         super.render(context, mouseX, mouseY, delta);
+    }
+
+    private void drawGlow(DrawContext context, int x, int y) {
+        int maxRadius = 150;
+        for (int r = maxRadius; r > 0; r -= 4) {
+            int alpha = (int)(50 * (1 - (double)r / maxRadius));
+            if (alpha <= 0) continue;
+            int color = (alpha << 24) | 0xFFFFFF;
+            context.fill(x - r, y - r, x + r, y + r, color);
+        }
     }
 
     private void drawSettings(DrawContext context, Module module, int x, int y) {
@@ -178,7 +173,6 @@ public class ClickGuiScreen extends Screen {
         int fillW = (int)(w * percent);
         context.fill(x, sliderY, x + fillW, sliderY + h, 0xFF00AA00);
 
-        // Lưu vị trí để xử lý click
         ns.setSliderX(x);
         ns.setSliderY(sliderY);
         ns.setSliderWidth(w);
@@ -209,21 +203,20 @@ public class ClickGuiScreen extends Screen {
                 .filter(m -> m.getCategory() == selected)
                 .collect(Collectors.toList());
 
-        // Click vào module
         for (Module module : visibleModules) {
             if (mouseX >= x && mouseX <= x + rowW &&
                 mouseY >= y && mouseY <= y + rowH) {
-                if (button == GLFW.GLFW_MOUSE_BUTTON_1) { // Trái
+                if (button == GLFW.GLFW_MOUSE_BUTTON_1) {
                     if (selectedModule == module) {
                         module.toggle();
                     } else {
                         selectedModule = module;
                     }
                     return true;
-                } else if (button == GLFW.GLFW_MOUSE_BUTTON_2) { // Phải
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_2) {
                     selectedModule = module;
                     return true;
-                } else if (button == GLFW.GLFW_MOUSE_BUTTON_3) { // Giữa
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_3) {
                     waitingForKeybind = true;
                     keybindModule = module;
                     return true;
@@ -232,7 +225,6 @@ public class ClickGuiScreen extends Screen {
             y += rowH + spacing;
         }
 
-        // Click vào settings
         if (selectedModule != null && button == GLFW.GLFW_MOUSE_BUTTON_1) {
             handleSettingsClick(selectedModule, (int) mouseX, (int) mouseY);
         }
