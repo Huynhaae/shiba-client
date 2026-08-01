@@ -29,7 +29,6 @@ public class ClickGuiScreen extends Screen {
     private static final int BG_COLOR = 0xFF1A1A1A;
     private static final int PANEL_COLOR = 0xFF2A2A2A;
     private static final int HOVER_COLOR = 0xFF3A3A3A;
-    private static final int TEXT_COLOR = 0xFFFFFFFF;
     private static final int ENABLED_COLOR = 0xFF00FF00;
     private static final int DISABLED_COLOR = 0xFF888888;
 
@@ -62,7 +61,6 @@ public class ClickGuiScreen extends Screen {
         this.mouseY = mouseY;
         this.renderBackground(context, mouseX, mouseY, delta);
 
-        // Vệt sáng blur theo chuột
         drawGlow(context, mouseX, mouseY);
 
         int x = 10;
@@ -111,10 +109,11 @@ public class ClickGuiScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
     }
 
+    // Hiệu ứng blur: sáng ở tâm, mờ dần ra ngoài
     private void drawGlow(DrawContext context, int x, int y) {
-        int maxRadius = 150;
-        for (int r = maxRadius; r > 0; r -= 4) {
-            int alpha = (int)(50 * (1 - (double)r / maxRadius));
+        int maxRadius = 60; // Nhỏ hơn để đẹp
+        for (int r = maxRadius; r >= 0; r -= 3) {
+            int alpha = (int)(80 * (1 - (double)r / maxRadius));
             if (alpha <= 0) continue;
             int color = (alpha << 24) | 0xFFFFFF;
             context.fill(x - r, y - r, x + r, y + r, color);
