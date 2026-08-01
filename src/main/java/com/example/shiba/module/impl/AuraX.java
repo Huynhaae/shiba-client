@@ -1,5 +1,6 @@
 package com.example.shiba.module.impl;
 
+import com.example.shiba.util.PacketBlocker;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
