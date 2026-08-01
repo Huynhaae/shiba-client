@@ -8,10 +8,10 @@ public class HitboxBV extends Module {
     public final NumberSetting width = new NumberSetting("Width", 0.0, 10.0, 0.3, 0.05);
     public final NumberSetting height = new NumberSetting("Height", 0.0, 10.0, 0.3, 0.05);
 
-    public HitboxBV() {
-        super("HitboxBV", "Mở rộng hitbox (có slider)", Category.COMBAT);
-        // addSettings(width, height); // đã xóa
-    }
+   public HitboxBV() {
+    super("HitboxBV", "Mở rộng hitbox (có slider)", Category.COMBAT);
+    System.out.println("HitboxBV initialized!"); // <-- thêm dòng này
+}
 
     public float getWidth() {
         return isEnabled() ? (float) width.getValue() : 0f;
