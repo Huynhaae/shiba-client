@@ -13,7 +13,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,12 +32,10 @@ public class ClickGuiScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        // Nút Back
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), button -> {
             if (this.client != null) this.client.setScreen(null);
         }).dimensions(5, 5, 50, 20).build());
 
-        // Các nút category
         int x = 60;
         for (Category c : Category.values()) {
             this.addDrawableChild(ButtonWidget.builder(Text.literal(c.name()), button -> {
@@ -62,58 +59,33 @@ public class ClickGuiScreen extends Screen {
         int rowH = 22;
         int spacing = 2;
 
-        // Vẽ danh sách module theo category
         List<Module> visibleModules = modules.stream()
                 .filter(m -> m.getCategory() == selected)
                 .collect(Collectors.toList());
 
-        // Thanh cuộn
-        if (visibleModules.size() * (rowH + spacing) > height - 50) {
-            // Có thể thêm logic scroll
-        }
-
         for (Module module : visibleModules) {
-            // Vẽ nền module
             boolean hovered = mouseX >= x && mouseX <= x + rowW &&
                               mouseY >= y && mouseY <= y + rowH;
             int bgColor = (module == selectedModule) ? 0xFF444466 :
                           hovered ? 0xFF555577 : 0xFF333355;
             context.fill(x, y, x + rowW, y + rowH, bgColor);
 
-            // Vẽ tên module
             String name = module.getName();
-            if (module.isEnabled()) {
-                context.drawText(textRenderer, name, x + 4, y + 5, 0x00FF00, false);
-            } else {
-                context.drawText(textRenderer, name, x + 4, y + 5, 0xFF8888, false);
-            }
-
-            // Click chọn module
-            if (hovered && mouseY > 35) {
-                if (mouseX >= x && mouseX <= x + rowW &&
-                    mouseY >= y && mouseY <= y + rowH) {
-                    // Click chọn module
-                }
-            }
+            int color = module.isEnabled() ? 0x00FF00 : 0xFF8888;
+            context.drawText(textRenderer, name, x + 4, y + 5, color, false);
 
             y += rowH + spacing;
         }
 
-        // Vẽ settings của module được chọn
-        if (selectedModule != null) {
-            drawSettings(context, selectedModule, x + rowW + 20, 35);
-        }
-
-        // Vẽ dòng "AuraX Settings" (nếu đang chọn module)
         if (selectedModule != null) {
             context.drawText(textRenderer, selectedModule.getName() + " Settings", x + rowW + 20, 25, 0xFFFFFF, false);
+            drawSettings(context, selectedModule, x + rowW + 20, 35);
         }
 
         super.render(context, mouseX, mouseY, delta);
     }
 
     private void drawSettings(DrawContext context, Module module, int x, int y) {
-        // Lấy tất cả setting từ module (qua reflection hoặc field)
         List<Setting> settings = getSettingsFromModule(module);
         if (settings.isEmpty()) {
             context.drawText(textRenderer, "No settings", x, y, 0x888888, false);
@@ -157,19 +129,14 @@ public class ClickGuiScreen extends Screen {
         double max = ns.getMax();
         double percent = (value - min) / (max - min);
 
-        // Tên và giá trị
         String text = ns.getName() + ": " + String.format("%.2f", value);
         context.drawText(textRenderer, text, x, y - 2, 0xFFFFFF, false);
 
-        // Nền slider
         int sliderY = y + 12;
         context.fill(x, sliderY, x + w, sliderY + h, 0xFF333333);
-
-        // Phần đã chọn
         int fillW = (int)(w * percent);
         context.fill(x, sliderY, x + fillW, sliderY + h, 0xFF00AA00);
 
-        // Xử lý click
         if (mouseX >= x && mouseX <= x + w &&
             mouseY >= sliderY && mouseY <= sliderY + h) {
             double newPercent = (mouseX - x) / (double) w;
@@ -181,29 +148,6 @@ public class ClickGuiScreen extends Screen {
     private void drawModeSetting(DrawContext context, ModeSetting ms, int x, int y) {
         String text = ms.getName() + ": " + ms.getValue();
         context.drawText(textRenderer, text, x, y, 0xFFFFFF, false);
-
-        int btnW = 60;
-        int btnH = 16;
-        int btnX = x + textRenderer.getWidth(text) + 10;
-
-        // Nút chọn chế độ
-        List<String> modes = ms.getModes();
-        int currentIndex = modes.indexOf(ms.getValue());
-
-        // Nút Previous
-        if (currentIndex > 0) {
-            context.fill(btnX, y, btnX + 20, y + btnH, 0xFF444466);
-            context.drawText(textRenderer, "<", btnX + 5, y + 4, 0xFFFFFF, false);
-        }
-
-        // Nút Next
-        if (currentIndex < modes.size() - 1) {
-            context.fill(btnX + 25, y, btnX + 45, y + btnH, 0xFF444466);
-            context.drawText(textRenderer, ">", btnX + 30, y + 4, 0xFFFFFF, false);
-        }
-
-        // Click xử lý
-        // (Logic click sẽ xử lý trong render loop, nhưng tạm thời bỏ qua)
     }
 
     private void drawBooleanSetting(DrawContext context, BooleanSetting bs, int x, int y) {
@@ -213,7 +157,6 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Xử lý click chọn module
         int x = 10;
         int y = 35 + scrollY;
         int rowW = 120;
@@ -227,9 +170,8 @@ public class ClickGuiScreen extends Screen {
         for (Module module : visibleModules) {
             if (mouseX >= x && mouseX <= x + rowW &&
                 mouseY >= y && mouseY <= y + rowH) {
-                if (button == 0) { // Left click
+                if (button == 0) {
                     if (selectedModule == module) {
-                        // Toggle module
                         module.toggle();
                     } else {
                         selectedModule = module;
@@ -240,7 +182,6 @@ public class ClickGuiScreen extends Screen {
             y += rowH + spacing;
         }
 
-        // Xử lý click trên settings
         if (selectedModule != null) {
             handleSettingsClick(selectedModule, (int) mouseX, (int) mouseY, button);
         }
@@ -266,8 +207,6 @@ public class ClickGuiScreen extends Screen {
                     return;
                 }
                 y += 35;
-            } else if (setting instanceof ModeSetting ms) {
-                y += 25;
             } else if (setting instanceof BooleanSetting bs) {
                 String text = bs.getName() + ": " + (bs.getValue() ? "ON" : "OFF");
                 int textWidth = textRenderer.getWidth(text);
@@ -277,14 +216,18 @@ public class ClickGuiScreen extends Screen {
                     return;
                 }
                 y += 25;
+            } else if (setting instanceof ModeSetting ms) {
+                // Xử lý click chọn mode (có thể thêm nút < >)
+                y += 25;
             }
         }
     }
 
+    // SỬA QUAN TRỌNG: mouseScrolled có 4 tham số trong 1.21.1
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount, double delta) {
         scrollY += amount * 10;
-        return super.mouseScrolled(mouseX, mouseY, amount);
+        return super.mouseScrolled(mouseX, mouseY, amount, delta);
     }
 
     @Override
