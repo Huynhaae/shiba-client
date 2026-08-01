@@ -3,7 +3,6 @@ package com.example.shiba.mixin;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.HitboxBV;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Box;
 import net.minecraft.client.MinecraftClient;
@@ -21,6 +20,7 @@ public class MixinLivingEntityBV {
         if (module == null || !module.isEnabled()) return;
 
         Entity entity = (Entity) (Object) this;
+        // Không áp dụng cho chính người chơi
         if (entity instanceof PlayerEntity player &&
                 player == MinecraftClient.getInstance().player) {
             return;
@@ -31,6 +31,8 @@ public class MixinLivingEntityBV {
 
         double w = module.getWidth();
         double h = module.getHeight();
+        if (w == 0 && h == 0) return;
+
         Box expanded = original.expand(w, h, w);
         cir.setReturnValue(expanded);
     }
