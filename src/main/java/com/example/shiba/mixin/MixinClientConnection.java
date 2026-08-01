@@ -13,13 +13,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientConnection.class)
 public class MixinClientConnection {
 
+    public static boolean ignoreLookPackets = false;
+
     @Inject(method = "send(Lnet/minecraft/network/packet/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
+        if (ignoreLookPackets) return;
+
         AuraX aura = ModuleManager.AURAX;
         if (aura != null && aura.isEnabled() && "Silent".equals(aura.getMode())) {
             if (packet instanceof PlayerMoveC2SPacket) {
                 PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
-                // Chặn tất cả packet có thay đổi góc
                 if (movePacket.changesLook()) {
                     ci.cancel();
                 }
