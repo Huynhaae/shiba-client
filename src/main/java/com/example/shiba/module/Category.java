@@ -1,9 +1,11 @@
 package com.example.shiba.module;
 
-public enum ModuleCategory {
+public enum Category {
     COMBAT,
     MOVEMENT,
     PLAYER,
     VISUAL,
+    RENDER,
+    HUD,
     MISC
 }
