@@ -167,7 +167,7 @@ public class AuraX extends Module {
         );
 
         // Tạm thời bỏ qua chặn để gửi packet xoay
-        MixinClientConnection.ignoreLookPackets = true;
+       MixinClientConnection.setIgnoreLookPackets(true);
         mc.player.networkHandler.sendPacket(packet);
         MixinClientConnection.ignoreLookPackets = false;
     }
