@@ -147,6 +147,10 @@ public class AuraX extends Module {
         mc.player.setPitch((float) pitch);
     }
 
+    public String getMode() {
+    return mode.getValue();
+}
+
     private boolean isAboutToLand(MinecraftClient mc) {
         if (mc.player == null) return false;
         // Chỉ đánh nếu đang rơi và sắp chạm đất
