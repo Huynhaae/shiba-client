@@ -31,7 +31,7 @@ public class MixinClientConnection {
         float[] angles = aimX.getAimAngles(mc);
         if (angles == null) return packet;
 
-        // Thay thế packet bằng packet mới, không set góc player
+        // Thay packet gốc bằng packet mới, KHÔNG set góc player
         return new PlayerMoveC2SPacket.LookAndOnGround(
                 angles[0],
                 angles[1],
