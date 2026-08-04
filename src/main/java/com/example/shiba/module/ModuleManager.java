@@ -1,5 +1,6 @@
 package com.example.shiba.module;
 
+import com.example.shiba.module.impl.AimX;
 import com.example.shiba.module.impl.HitboxX;
 import com.example.shiba.module.impl.CritX;
 import com.example.shiba.module.impl.HitboxBV;
@@ -19,6 +20,7 @@ import java.util.List;
 public final class ModuleManager {
     private static final List<Module> MODULES = new ArrayList<>();
 
+    public static final AimX AIMX = register(new AimX());
     public static final HitboxX HITBOXX = register(new HitboxX());
     public static final CritX CRITX = register(new CritX());
     public static final HitboxBV HITBOXBV = register(new HitboxBV());
