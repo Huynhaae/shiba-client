@@ -1,6 +1,18 @@
 package com.example.shiba.module;
 
+<<<<<<< HEAD
 import com.example.shiba.module.impl.*;
+=======
+import com.example.shiba.module.impl.HitboxBV;
+import com.example.shiba.module.impl.CoordsHud;
+import com.example.shiba.module.impl.FpsHud;
+import com.example.shiba.module.impl.Zoom;
+import com.example.shiba.module.impl.Hitbox;
+import com.example.shiba.module.impl.Reach;
+import com.example.shiba.module.impl.TriggerBot;
+import com.example.shiba.module.impl.ESP;
+import com.example.shiba.module.impl.Aura;
+>>>>>>> 54c74b7 (Release v1.0.51 - HitboxBV fix + AimX/MaceX)
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,9 +29,12 @@ public final class ModuleManager {
     public static final TriggerBot TRIGGERBOT = register(new TriggerBot());
     public static final ESP ESP = register(new ESP());
     public static final Aura AURA = register(new Aura());
+<<<<<<< HEAD
     public static final AimX AIMX = register(new AimX());
     public static final MaceX MACEX = register(new MaceX());
     public static final CritX CRITX = register(new CritX());
+=======
+>>>>>>> 54c74b7 (Release v1.0.51 - HitboxBV fix + AimX/MaceX)
 
     private ModuleManager() {}
 
