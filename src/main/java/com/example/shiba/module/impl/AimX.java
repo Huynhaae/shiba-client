@@ -25,12 +25,12 @@ public class AimX extends Module {
     public final NumberSetting fov = new NumberSetting("FOV", 30.0, 360.0, 180.0, 1.0);
     public final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     public final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
-    public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 5.0, 0.5);
+    public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
 
     private LivingEntity target = null;
 
     public AimX() {
-        super("AimX", "Aim hỗ trợ đánh trúng (Silent không xoay cam)", Category.COMBAT);
+        super("AimX", "Silent Aim - ít giật nhất", Category.COMBAT);
     }
 
     @Override
