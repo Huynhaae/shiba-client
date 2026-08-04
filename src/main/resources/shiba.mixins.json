@@ -5,7 +5,6 @@
   "client": [
     "MixinClientConnection",
     "MixinClientPlayerInteractionManager",
-    "MixinEntity",
     "MixinPlayerEntity"
   ],
   "injectors": {
