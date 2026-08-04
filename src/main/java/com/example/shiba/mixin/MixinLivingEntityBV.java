@@ -1,46 +1,31 @@
 package com.example.shiba.mixin;
 
 import com.example.shiba.module.ModuleManager;
-import com.example.shiba.module.impl.HitboxBV;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Box;
-import net.minecraft.client.MinecraftClient;
+import com.example.shiba.module.impl.AimX;
+import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Entity.class)
-public class MixinLivingEntityBV {
+@Mixin(LivingEntity.class)
+public class MixinLivingEntity {
 
-    @Inject(method = "getBoundingBox", at = @At("RETURN"), cancellable = true)
-    private void onGetBoundingBox(CallbackInfoReturnable<Box> cir) {
-        HitboxBV module = ModuleManager.HITBOXBV;
-        if (module == null || !module.isEnabled()) return;
-
-        Entity entity = (Entity) (Object) this;
-        if (entity instanceof PlayerEntity player &&
-                player == MinecraftClient.getInstance().player) {
-            return;
+    @Inject(method = "setYaw", at = @At("HEAD"), cancellable = true)
+    private void onSetYaw(float yaw, CallbackInfo ci) {
+        AimX aimX = ModuleManager.AIMX;
+        if (aimX != null && aimX.isEnabled() && aimX.getMode().equals("Silent")) {
+            // Chặn setYaw khi Silent mode đang bật
+            ci.cancel();
         }
+    }
 
-        Box original = cir.getReturnValue();
-        if (original == null) return;
-
-        double w = module.getWidth();
-        double h = module.getHeight();
-        if (w == 0 && h == 0) return;
-
-        // Mở rộng về các phía, giữ nguyên đáy → không bị lún xuống đất
-        Box expanded = new Box(
-            original.minX - w,
-            original.minY,
-            original.minZ - w,
-            original.maxX + w,
-            original.maxY + h,
-            original.maxZ + w
-        );
-        cir.setReturnValue(expanded);
+    @Inject(method = "setPitch", at = @At("HEAD"), cancellable = true)
+    private void onSetPitch(float pitch, CallbackInfo ci) {
+        AimX aimX = ModuleManager.AIMX;
+        if (aimX != null && aimX.isEnabled() && aimX.getMode().equals("Silent")) {
+            // Chặn setPitch khi Silent mode đang bật
+            ci.cancel();
+        }
     }
 }
