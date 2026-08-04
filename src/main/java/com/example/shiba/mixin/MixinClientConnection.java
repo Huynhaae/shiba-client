@@ -15,7 +15,6 @@ public class MixinClientConnection {
 
     @ModifyVariable(method = "send", at = @At("HEAD"), argsOnly = true)
     private Packet<?> modifyPacket(Packet<?> packet) {
-        // Chỉ xử lý packet PlayerMoveC2SPacket có thay đổi góc
         if (!(packet instanceof PlayerMoveC2SPacket)) return packet;
         PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
         if (!movePacket.changesLook()) return packet;
@@ -26,16 +25,17 @@ public class MixinClientConnection {
         AimX aimX = ModuleManager.AIMX;
         if (aimX == null || !aimX.isEnabled()) return packet;
 
-        // Chỉ áp dụng khi ở chế độ Silent và đang tấn công
         if (!aimX.getMode().equals("Silent")) return packet;
         if (!mc.options.attackKey.isPressed()) return packet;
 
         float[] angles = aimX.getAimAngles(mc);
         if (angles == null) return packet;
 
-        // Thay thế packet gốc bằng packet mới với góc đã sửa
-        // Không gọi setYaw, không hủy, không gửi lại → an toàn tuyệt đối
-        return new PlayerMoveC2SPacket.LookAndOnGround(
+        // Sử dụng Full thay vì LookAndOnGround để giữ nguyên vị trí
+        return new PlayerMoveC2SPacket.Full(
+                mc.player.getX(),
+                mc.player.getY(),
+                mc.player.getZ(),
                 angles[0],
                 angles[1],
                 mc.player.isOnGround()
