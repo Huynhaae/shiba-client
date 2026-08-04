@@ -1,9 +1,13 @@
-private int keybind = 0;
+package com.example.shiba.module.settings;
 
-public int getKeybind() {
-    return keybind;
-}
+public abstract class Setting {
+    private final String name;
 
-public void setKeybind(int key) {
-    this.keybind = key;
+    public Setting(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
 }
