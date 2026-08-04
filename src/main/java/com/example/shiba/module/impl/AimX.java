@@ -20,19 +20,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AimX extends Module {
-    // Settings - public final để GUI có thể truy cập
-    public final ModeSetting mode = new ModeSetting("Mode", "Normal", "Normal", "Legit", "Silent");
+    public final ModeSetting mode = new ModeSetting("Mode", "Silent", "Normal", "Legit", "Silent");
     public final NumberSetting range = new NumberSetting("Range", 3.0, 8.0, 5.0, 0.1);
     public final NumberSetting fov = new NumberSetting("FOV", 30.0, 360.0, 180.0, 1.0);
     public final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     public final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
     public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
-    public final NumberSetting hitboxExpand = new NumberSetting("Hitbox Expand", 0.0, 3.0, 0.5, 0.05);
 
     private LivingEntity target = null;
 
     public AimX() {
-        super("AimX", "Tự động ngắm mục tiêu + hitbox expand", Category.COMBAT);
+        super("AimX", "Silent Aim - Không xoay cam, server thấy bạn xoay", Category.COMBAT);
     }
 
     @Override
@@ -50,14 +48,9 @@ public class AimX extends Module {
         return mode.getValue();
     }
 
-    public float getHitboxExpand() {
-        return isEnabled() ? (float) hitboxExpand.getValue() : 0f;
-    }
-
     public float[] getAimAngles(MinecraftClient mc) {
         if (target == null || mc.player == null) return null;
         String currentMode = mode.getValue();
-        if (currentMode.equals("None")) return null;
 
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
@@ -111,8 +104,8 @@ public class AimX extends Module {
                     .collect(Collectors.toList());
         }
 
-        String currentMode = mode.getValue();
-        if (!currentMode.equals("Silent")) {
+        // FOV chỉ áp dụng khi không phải Silent
+        if (!mode.getValue().equals("Silent")) {
             float yaw = player.getYaw();
             float pitch = player.getPitch();
             double fovLimit = fov.getValue();
