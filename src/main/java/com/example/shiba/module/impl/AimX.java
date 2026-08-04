@@ -31,8 +31,6 @@ public class AimX extends Module {
     private final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
 
     private LivingEntity target = null;
-    private long lastLookPacketTime = 0;
-    private float lastYaw = 0, lastPitch = 0;
 
     public AimX() {
         super("AimX", "Tự động ngắm trước khi đánh", Category.COMBAT);
@@ -40,7 +38,6 @@ public class AimX extends Module {
 
     @Override
     public void onTick() {
-        // Chỉ tìm target mỗi tick, không xoay ở đây
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
         target = findTarget(mc);
@@ -54,9 +51,6 @@ public class AimX extends Module {
         return mode.getValue();
     }
 
-    /**
-     * Hàm này sẽ được gọi từ mixin ngay trước khi tấn công
-     */
     public void aimAtTarget(MinecraftClient mc, LivingEntity target) {
         if (target == null || mc.player == null) return;
         String currentMode = mode.getValue();
@@ -105,17 +99,8 @@ public class AimX extends Module {
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // Tránh spam packet
-        long now = System.currentTimeMillis();
-        if (now - lastLookPacketTime < 100) return;
-        if (Math.abs(yaw - lastYaw) < 1.0f && Math.abs(pitch - lastPitch) < 1.0f) return;
-
-        lastYaw = yaw;
-        lastPitch = pitch;
-        lastLookPacketTime = now;
-
-        // Gửi packet look riêng, KHÔNG set góc vào player
-        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookOnly(yaw, pitch, mc.player.isOnGround());
+        // Gửi packet look mỗi lần, không filter gì
+        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround());
 
         PacketBlocker.setIgnoreLookPackets(true);
         mc.player.networkHandler.sendPacket(packet);
