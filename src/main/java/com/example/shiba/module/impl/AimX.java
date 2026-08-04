@@ -104,7 +104,6 @@ public class AimX extends Module {
                     .collect(Collectors.toList());
         }
 
-        // FOV chỉ áp dụng khi không phải Silent
         if (!mode.getValue().equals("Silent")) {
             float yaw = player.getYaw();
             float pitch = player.getPitch();
