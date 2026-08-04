@@ -8,44 +8,37 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(ClientConnection.class)
 public class MixinClientConnection {
 
-    @Inject(method = "send", at = @At("HEAD"), cancellable = true)
-    private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
-        if (!(packet instanceof PlayerMoveC2SPacket)) return;
+    @ModifyVariable(method = "send", at = @At("HEAD"), argsOnly = true)
+    private Packet<?> modifyPacket(Packet<?> packet) {
+        // Chỉ xử lý packet PlayerMoveC2SPacket có thay đổi góc
+        if (!(packet instanceof PlayerMoveC2SPacket)) return packet;
         PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
-        if (!movePacket.changesLook()) return;
+        if (!movePacket.changesLook()) return packet;
 
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null) return;
+        if (mc.player == null) return packet;
 
         AimX aimX = ModuleManager.AIMX;
-        if (aimX == null || !aimX.isEnabled()) return;
+        if (aimX == null || !aimX.isEnabled()) return packet;
 
-        // Chỉ áp dụng khi đang Silent và giữ chuột trái
-        if (!aimX.getMode().equals("Silent")) return;
-        if (!mc.options.attackKey.isPressed()) return;
+        // Chỉ áp dụng khi ở chế độ Silent và đang tấn công
+        if (!aimX.getMode().equals("Silent")) return packet;
+        if (!mc.options.attackKey.isPressed()) return packet;
 
         float[] angles = aimX.getAimAngles(mc);
-        if (angles == null) return;
+        if (angles == null) return packet;
 
-        // Hủy packet gốc
-        ci.cancel();
-
-        // Gửi packet mới với góc đã sửa (KHÔNG set yaw/pitch)
-        PlayerMoveC2SPacket newPacket = new PlayerMoveC2SPacket.LookAndOnGround(
+        // Thay thế packet gốc bằng packet mới với góc đã sửa
+        // Không gọi setYaw, không hủy, không gửi lại → an toàn tuyệt đối
+        return new PlayerMoveC2SPacket.LookAndOnGround(
                 angles[0],
                 angles[1],
                 mc.player.isOnGround()
         );
-
-        // Gửi trực tiếp (bỏ qua mixin để tránh loop)
-        // Sử dụng sendPacket của network handler hoặc gọi lại send nhưng với flag
-        // Cách an toàn: gửi qua network handler
-        mc.player.networkHandler.sendPacket(newPacket);
     }
 }
