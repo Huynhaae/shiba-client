@@ -3,6 +3,7 @@
   "package": "com.example.shiba.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "MixinEntityHitboxAimX",
     "MixinClientPlayerInteractionManager",
     "MixinLivingEntityBV",
     "MixinClientConnection",
