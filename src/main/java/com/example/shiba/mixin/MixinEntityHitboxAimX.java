@@ -18,14 +18,12 @@ public class MixinEntityHitboxAimX {
     @Inject(method = "getBoundingBox", at = @At("RETURN"), cancellable = true)
     private void onGetBoundingBox(CallbackInfoReturnable<Box> cir) {
         Entity entity = (Entity) (Object) this;
-        // Không áp dụng cho chính người chơi
         if (entity instanceof PlayerEntity && entity == MinecraftClient.getInstance().player) return;
         if (!(entity instanceof LivingEntity)) return;
 
         AimX aimX = ModuleManager.AIMX;
         if (aimX == null || !aimX.isEnabled()) return;
 
-        // Chỉ mở rộng hitbox cho target hiện tại của AimX
         if (aimX.getTarget() != entity) return;
 
         float expand = aimX.getHitboxExpand();
@@ -34,7 +32,6 @@ public class MixinEntityHitboxAimX {
         Box box = cir.getReturnValue();
         if (box == null) return;
 
-        // Mở rộng hitbox theo cả 3 chiều (giống hitboxBV)
         Box expanded = box.expand(expand, expand, expand);
         cir.setReturnValue(expanded);
     }
