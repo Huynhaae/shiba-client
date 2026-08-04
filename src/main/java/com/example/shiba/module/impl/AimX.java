@@ -20,20 +20,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AimX extends Module {
-    // Settings
-    private final ModeSetting mode = new ModeSetting("Mode", "Normal", "Normal", "Legit", "Silent");
-    private final NumberSetting range = new NumberSetting("Range", 3.0, 8.0, 5.0, 0.1);
-    private final NumberSetting fov = new NumberSetting("FOV", 30.0, 360.0, 180.0, 1.0);
-    private final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
-    private final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
-    private final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
-    private final NumberSetting hitboxExpand = new NumberSetting("Hitbox Expand", 0.0, 3.0, 0.5, 0.05);
+    // Settings - public final để GUI có thể truy cập
+    public final ModeSetting mode = new ModeSetting("Mode", "Normal", "Normal", "Legit", "Silent");
+    public final NumberSetting range = new NumberSetting("Range", 3.0, 8.0, 5.0, 0.1);
+    public final NumberSetting fov = new NumberSetting("FOV", 30.0, 360.0, 180.0, 1.0);
+    public final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
+    public final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
+    public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
+    public final NumberSetting hitboxExpand = new NumberSetting("Hitbox Expand", 0.0, 3.0, 0.5, 0.05);
 
     private LivingEntity target = null;
 
     public AimX() {
-        super("AimX", "Tự động ngắm mục tiêu", Category.COMBAT);
-        addSettings(mode, range, fov, onlyPlayers, throughWalls, legitSpeed, hitboxExpand);
+        super("AimX", "Tự động ngắm mục tiêu + hitbox expand", Category.COMBAT);
     }
 
     @Override
