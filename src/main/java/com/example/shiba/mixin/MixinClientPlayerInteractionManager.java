@@ -22,16 +22,13 @@ public class MixinClientPlayerInteractionManager {
         AimX aimX = ModuleManager.AIMX;
         if (aimX == null || !aimX.isEnabled()) return;
 
-        // Chỉ áp dụng cho chế độ Silent
         if (!aimX.getMode().equals("Silent")) return;
-
-        // Chỉ set góc nếu target chính là mục tiêu của AimX
         if (aimX.getTarget() != target) return;
 
         float[] angles = aimX.getAimAngles(mc);
         if (angles == null) return;
 
-        // Set góc tạm thời (sẽ được gửi kèm packet attack)
+        // Set góc ngay trước khi gửi packet tấn công
         mc.player.setYaw(angles[0]);
         mc.player.setPitch(angles[1]);
     }
