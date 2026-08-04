@@ -31,7 +31,15 @@ public class MixinEntityHitbox {
         Box box = cir.getReturnValue();
         if (box == null) return;
 
-        Box expanded = box.expand(w, h, w);
+        // Mở rộng đúng cách: chỉ mở rộng lên trên và sang hai bên, giữ nguyên đáy
+        Box expanded = new Box(
+            box.minX - w,
+            box.minY,
+            box.minZ - w,
+            box.maxX + w,
+            box.maxY + h,
+            box.maxZ + w
+        );
         cir.setReturnValue(expanded);
     }
 }
