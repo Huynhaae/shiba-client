@@ -15,7 +15,6 @@ public class MixinClientConnection {
 
     @ModifyVariable(method = "send", at = @At("HEAD"), argsOnly = true)
     private Packet<?> modifyPacket(Packet<?> packet) {
-        // Chỉ xử lý packet PlayerMoveC2SPacket
         if (!(packet instanceof PlayerMoveC2SPacket)) return packet;
         PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
         if (!movePacket.changesLook()) return packet;
@@ -26,14 +25,11 @@ public class MixinClientConnection {
         AimX aimX = ModuleManager.AIMX;
         if (aimX == null || !aimX.isEnabled()) return packet;
 
-        // Chỉ áp dụng khi đang giữ chuột trái (tấn công)
         if (!mc.options.attackKey.isPressed()) return packet;
 
-        // Lấy góc aim từ module
         float[] angles = aimX.getAimAngles(mc);
         if (angles == null) return packet;
 
-        // Tạo packet mới với góc đã sửa (giữ nguyên onGround)
         return new PlayerMoveC2SPacket.LookAndOnGround(
                 angles[0],
                 angles[1],
