@@ -29,8 +29,11 @@ public class AimX extends Module {
     private final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     private final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
     private final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
+    private final NumberSetting packetInterval = new NumberSetting("PacketInterval (ms)", 50, 300, 100, 10); // tăng mặc định lên 100
 
     private LivingEntity target = null;
+    private long lastLookPacketTime = 0;
+    private float lastYaw = 0, lastPitch = 0;
 
     public AimX() {
         super("AimX", "Tự động ngắm trước khi đánh", Category.COMBAT);
@@ -99,7 +102,17 @@ public class AimX extends Module {
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // Gửi packet look mỗi lần, không filter gì
+        long now = System.currentTimeMillis();
+        long interval = (long) packetInterval.getValue();
+        if (now - lastLookPacketTime < interval) return;
+
+        // Chỉ gửi nếu góc thay đổi đủ lớn (giảm độ nhạy để ít packet hơn)
+        if (Math.abs(yaw - lastYaw) < 2.0f && Math.abs(pitch - lastPitch) < 1.0f) return;
+
+        lastYaw = yaw;
+        lastPitch = pitch;
+        lastLookPacketTime = now;
+
         PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround());
 
         PacketBlocker.setIgnoreLookPackets(true);
