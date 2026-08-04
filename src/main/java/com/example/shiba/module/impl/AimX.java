@@ -5,13 +5,11 @@ import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
-import com.example.shiba.util.PacketBlocker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -29,11 +27,8 @@ public class AimX extends Module {
     private final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     private final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
     private final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
-    private final NumberSetting packetInterval = new NumberSetting("PacketInterval (ms)", 50, 300, 100, 10); // tăng mặc định lên 100
 
     private LivingEntity target = null;
-    private long lastLookPacketTime = 0;
-    private float lastYaw = 0, lastPitch = 0;
 
     public AimX() {
         super("AimX", "Tự động ngắm trước khi đánh", Category.COMBAT);
@@ -54,18 +49,15 @@ public class AimX extends Module {
         return mode.getValue();
     }
 
-    public void aimAtTarget(MinecraftClient mc, LivingEntity target) {
-        if (target == null || mc.player == null) return;
+    /**
+     * Trả về góc cần xoay (yaw, pitch) để nhắm vào target.
+     * Nếu không có target hoặc mode None, trả về null.
+     */
+    public float[] getAimAngles(MinecraftClient mc) {
+        if (target == null || mc.player == null) return null;
         String currentMode = mode.getValue();
+        if (currentMode.equals("None")) return null;
 
-        if (currentMode.equals("Silent")) {
-            sendFakeLookPacket(mc, target);
-        } else {
-            rotateCamera(mc, target, currentMode);
-        }
-    }
-
-    private void rotateCamera(MinecraftClient mc, LivingEntity target, String mode) {
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
         Vec3d diff = targetPos.subtract(playerPos);
@@ -74,10 +66,9 @@ public class AimX extends Module {
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        float currentYaw = mc.player.getYaw();
-        float currentPitch = mc.player.getPitch();
-
-        if (mode.equals("Legit")) {
+        if (currentMode.equals("Legit")) {
+            float currentYaw = mc.player.getYaw();
+            float currentPitch = mc.player.getPitch();
             float yawDiff = MathHelper.wrapDegrees(yaw - currentYaw);
             float pitchDiff = pitch - currentPitch;
             float maxSpeed = (float) legitSpeed.getValue();
@@ -89,35 +80,7 @@ public class AimX extends Module {
             }
         }
 
-        mc.player.setYaw(yaw);
-        mc.player.setPitch(pitch);
-    }
-
-    private void sendFakeLookPacket(MinecraftClient mc, LivingEntity target) {
-        Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
-        Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
-        Vec3d diff = targetPos.subtract(playerPos);
-
-        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
-        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
-        pitch = MathHelper.clamp(pitch, -90, 90);
-
-        long now = System.currentTimeMillis();
-        long interval = (long) packetInterval.getValue();
-        if (now - lastLookPacketTime < interval) return;
-
-        // Chỉ gửi nếu góc thay đổi đủ lớn (giảm độ nhạy để ít packet hơn)
-        if (Math.abs(yaw - lastYaw) < 2.0f && Math.abs(pitch - lastPitch) < 1.0f) return;
-
-        lastYaw = yaw;
-        lastPitch = pitch;
-        lastLookPacketTime = now;
-
-        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround());
-
-        PacketBlocker.setIgnoreLookPackets(true);
-        mc.player.networkHandler.sendPacket(packet);
-        PacketBlocker.setIgnoreLookPackets(false);
+        return new float[]{yaw, pitch};
     }
 
     private LivingEntity findTarget(MinecraftClient mc) {
