@@ -30,7 +30,7 @@ public class AimX extends Module {
     private LivingEntity target = null;
 
     public AimX() {
-        super("AimX", "Silent Aim - Không xoay cam, server thấy bạn xoay", Category.COMBAT);
+        super("AimX", "Silent Aim - Không xoay cam", Category.COMBAT);
     }
 
     @Override
