@@ -6,8 +6,7 @@
     "MixinClientConnection",
     "MixinClientPlayerInteractionManager",
     "MixinEntity",
-    "MixinPlayerEntity",
-    "MixinLivingEntity"
+    "MixinPlayerEntity"
   ],
   "injectors": {
     "defaultRequire": 1
