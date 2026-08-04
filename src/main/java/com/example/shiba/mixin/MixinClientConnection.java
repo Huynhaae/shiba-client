@@ -2,6 +2,7 @@ package com.example.shiba.mixin;
 
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.AimX;
+import com.example.shiba.module.impl.MaceX;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.Packet;
@@ -22,16 +23,24 @@ public class MixinClientConnection {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return packet;
 
+        float[] angles = null;
+
+        // Kiểm tra AimX Silent
         AimX aimX = ModuleManager.AIMX;
-        if (aimX == null || !aimX.isEnabled()) return packet;
+        if (aimX != null && aimX.isEnabled() && aimX.getMode().equals("Silent") && mc.options.attackKey.isPressed()) {
+            angles = aimX.getAimAngles(mc);
+        }
 
-        if (!aimX.getMode().equals("Silent")) return packet;
-        if (!mc.options.attackKey.isPressed()) return packet;
+        // Kiểm tra MaceX Silent
+        if (angles == null) {
+            MaceX maceX = ModuleManager.MACEX;
+            if (maceX != null && maceX.isEnabled() && maceX.isSilentAimEnabled()) {
+                angles = maceX.getAimAngles(mc);
+            }
+        }
 
-        float[] angles = aimX.getAimAngles(mc);
         if (angles == null) return packet;
 
-        // Thay packet gốc bằng packet mới, KHÔNG set góc player
         return new PlayerMoveC2SPacket.LookAndOnGround(
                 angles[0],
                 angles[1],
