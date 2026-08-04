@@ -25,12 +25,12 @@ public class AimX extends Module {
     public final NumberSetting fov = new NumberSetting("FOV", 30.0, 360.0, 180.0, 1.0);
     public final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     public final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
-    public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
+    public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 5.0, 0.5);
 
     private LivingEntity target = null;
 
     public AimX() {
-        super("AimX", "Silent Aim - Không xoay cam, không giật, không crash", Category.COMBAT);
+        super("AimX", "Aim hỗ trợ đánh trúng (Silent không xoay cam)", Category.COMBAT);
     }
 
     @Override
@@ -40,17 +40,13 @@ public class AimX extends Module {
         target = findTarget(mc);
     }
 
-    public LivingEntity getTarget() {
-        return target;
-    }
-
-    public String getMode() {
-        return mode.getValue();
-    }
+    public LivingEntity getTarget() { return target; }
+    public String getMode() { return mode.getValue(); }
 
     public float[] getAimAngles(MinecraftClient mc) {
         if (target == null || mc.player == null) return null;
         String currentMode = mode.getValue();
+        if (currentMode.equals("None")) return null;
 
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
@@ -104,7 +100,8 @@ public class AimX extends Module {
                     .collect(Collectors.toList());
         }
 
-        if (!mode.getValue().equals("Silent")) {
+        String currentMode = mode.getValue();
+        if (!currentMode.equals("Silent")) {
             float yaw = player.getYaw();
             float pitch = player.getPitch();
             double fovLimit = fov.getValue();
