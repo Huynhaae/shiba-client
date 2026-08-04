@@ -5,10 +5,8 @@ import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
-import com.example.shiba.util.PacketBlocker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,15 +24,13 @@ public class AimX extends Module {
     private final ModeSetting mode = new ModeSetting("Mode", "Normal", "Normal", "Legit", "Silent");
     private final NumberSetting range = new NumberSetting("Range", 3.0, 8.0, 5.0, 0.1);
     private final NumberSetting fov = new NumberSetting("FOV", 30.0, 360.0, 180.0, 1.0);
-    private final NumberSetting hitboxWidth = new NumberSetting("Hitbox Width", 0.0, 2.0, 0.3, 0.05);
-    private final NumberSetting hitboxHeight = new NumberSetting("Hitbox Height", 0.0, 2.0, 0.3, 0.05);
     private final BooleanSetting onlyPlayers = new BooleanSetting("OnlyPlayers", true);
     private final BooleanSetting throughWalls = new BooleanSetting("ThroughWalls", false);
     private final BooleanSetting onAttackOnly = new BooleanSetting("OnAttackOnly", true);
     private final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
 
     private LivingEntity target = null;
-    private float lastYaw = 0, lastPitch = 0;
+    private int tickCounter = 0;
 
     public AimX() {
         super("AimX", "Tự động ngắm mục tiêu", Category.COMBAT);
@@ -45,17 +41,20 @@ public class AimX extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
 
+        // Chỉ aim khi đang giữ chuột trái (nếu bật onAttackOnly)
         if (onAttackOnly.getValue() && !mc.options.attackKey.isPressed()) return;
 
         target = findTarget(mc);
         if (target == null) return;
 
         String currentMode = mode.getValue();
-        if (currentMode.equals("Silent")) {
-            sendFakeRotation(mc, target);
-        } else {
-            rotateToTarget(mc, target, currentMode);
-        }
+
+        // Giới hạn tần suất set góc để tránh spam (mỗi 2 tick)
+        tickCounter++;
+        if (tickCounter % 2 != 0) return;
+
+        // Rotate: set góc client-side (không gửi packet riêng)
+        rotateToTarget(mc, target, currentMode);
     }
 
     private void rotateToTarget(MinecraftClient mc, LivingEntity target, String mode) {
@@ -71,48 +70,24 @@ public class AimX extends Module {
         float currentPitch = mc.player.getPitch();
 
         if (mode.equals("Legit")) {
+            // Legit: xoay chậm, giới hạn tốc độ
             float yawDiff = MathHelper.wrapDegrees(yaw - currentYaw);
             float pitchDiff = pitch - currentPitch;
-            float maxSpeed = (float) legitSpeed.getValue(); // ép kiểu trực tiếp
+            float maxSpeed = (float) legitSpeed.getValue();
             if (Math.abs(yawDiff) > maxSpeed) {
                 yaw = currentYaw + Math.signum(yawDiff) * maxSpeed;
             }
             if (Math.abs(pitchDiff) > maxSpeed / 2) {
                 pitch = currentPitch + Math.signum(pitchDiff) * maxSpeed / 2;
             }
+        } else if (mode.equals("Silent")) {
+            // Silent: không hạn chế tốc độ, set góc ngay lập tức (nhưng không gửi packet riêng)
+            // Góc sẽ được gửi kèm trong packet position/attack tiếp theo
         }
 
+        // Set góc cho player (gửi kèm trong các packet sau)
         mc.player.setYaw(yaw);
         mc.player.setPitch(pitch);
-    }
-
-    private void sendFakeRotation(MinecraftClient mc, LivingEntity target) {
-        Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
-        Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
-        Vec3d diff = targetPos.subtract(playerPos);
-
-        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
-        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
-        pitch = MathHelper.clamp(pitch, -90, 90);
-
-        if (Math.abs(yaw - lastYaw) < 1.0f && Math.abs(pitch - lastPitch) < 1.0f) return;
-
-        lastYaw = yaw;
-        lastPitch = pitch;
-
-        net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket packet =
-                new net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket.Full(
-                        mc.player.getX(),
-                        mc.player.getY(),
-                        mc.player.getZ(),
-                        yaw,
-                        pitch,
-                        mc.player.isOnGround()
-                );
-
-        PacketBlocker.setIgnoreLookPackets(true);
-        mc.player.networkHandler.sendPacket(packet);
-        PacketBlocker.setIgnoreLookPackets(false);
     }
 
     private LivingEntity findTarget(MinecraftClient mc) {
@@ -124,7 +99,6 @@ public class AimX extends Module {
         Box box = new Box(player.getX() - r, player.getY() - r, player.getZ() - r,
                           player.getX() + r, player.getY() + r, player.getZ() + r);
 
-        // Sửa: lấy List<LivingEntity>
         List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, box, e -> e != player);
 
         if (onlyPlayers.getValue()) {
@@ -145,6 +119,7 @@ public class AimX extends Module {
 
         String currentMode = mode.getValue();
         if (!currentMode.equals("Silent")) {
+            // Normal và Legit áp dụng FOV
             float yaw = player.getYaw();
             float pitch = player.getPitch();
             double fovLimit = fov.getValue();
