@@ -5,7 +5,8 @@
   "client": [
     "MixinClientConnection",
     "MixinClientPlayerInteractionManager",
-    "MixinPlayerEntity"
+    "MixinPlayerEntity",
+     "MixinEntityHitbox"
   ],
   "injectors": {
     "defaultRequire": 1
