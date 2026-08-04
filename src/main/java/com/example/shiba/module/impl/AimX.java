@@ -29,9 +29,11 @@ public class AimX extends Module {
     private final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
 
     private LivingEntity target = null;
+    private float lastYaw = 0, lastPitch = 0;
+    private boolean shouldAim = false;
 
     public AimX() {
-        super("AimX", "Tự động ngắm trước khi đánh", Category.COMBAT);
+        super("AimX", "Tự động ngắm mục tiêu (Silent với mixin packet)", Category.COMBAT);
     }
 
     @Override
