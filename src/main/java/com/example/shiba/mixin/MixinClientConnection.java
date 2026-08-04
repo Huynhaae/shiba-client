@@ -31,11 +31,8 @@ public class MixinClientConnection {
         float[] angles = aimX.getAimAngles(mc);
         if (angles == null) return packet;
 
-        // Sử dụng Full thay vì LookAndOnGround để giữ nguyên vị trí
-        return new PlayerMoveC2SPacket.Full(
-                mc.player.getX(),
-                mc.player.getY(),
-                mc.player.getZ(),
+        // Thay thế packet bằng packet mới, không set góc player
+        return new PlayerMoveC2SPacket.LookAndOnGround(
                 angles[0],
                 angles[1],
                 mc.player.isOnGround()
