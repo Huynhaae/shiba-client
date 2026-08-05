@@ -168,6 +168,6 @@ public class XRay extends Module {
     }
 
     public float getOpacity() {
-        return opacity.getValue().floatValue();
+        return (float) opacity.getValue(); // sửa lỗi
     }
 }
