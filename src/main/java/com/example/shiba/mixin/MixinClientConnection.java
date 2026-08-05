@@ -3,6 +3,7 @@ package com.example.shiba.mixin;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.AimX;
 import com.example.shiba.module.impl.MaceX;
+import com.example.shiba.util.SilentPacketHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.Packet;
@@ -14,17 +15,10 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(ClientConnection.class)
 public class MixinClientConnection {
 
-    // Flag để tránh vòng lặp: nếu true, không can thiệp vào packet
-    private static boolean isSilentPacket = false;
-
-    public static void setSilentPacket(boolean value) {
-        isSilentPacket = value;
-    }
-
     @ModifyVariable(method = "send", at = @At("HEAD"), argsOnly = true)
     private Packet<?> modifyPacket(Packet<?> packet) {
         // Nếu đang gửi packet giả, bỏ qua
-        if (isSilentPacket) return packet;
+        if (SilentPacketHelper.isSilentPacket()) return packet;
 
         if (!(packet instanceof PlayerMoveC2SPacket)) return packet;
         PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
