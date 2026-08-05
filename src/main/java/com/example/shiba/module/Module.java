@@ -17,10 +17,21 @@ public abstract class Module {
         this.category = category;
     }
 
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public Category getCategory() { return category; }
-    public boolean isEnabled() { return enabled; }
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 
     public void setEnabled(boolean enabled) {
         if (this.enabled != enabled) {
@@ -30,12 +41,27 @@ public abstract class Module {
         }
     }
 
-    public void toggle() { setEnabled(!enabled); }
+    public void toggle() {
+        setEnabled(!enabled);
+    }
 
-    public int getKeybind() { return keybind; }
-    public void setKeybind(int key) { this.keybind = key; }
+    public int getKeybind() {
+        return keybind;
+    }
 
-    public void onEnable() {}
-    public void onDisable() {}
+    public void setKeybind(int key) {
+        this.keybind = key;
+    }
+
+    // Các method này có thể được override bởi subclass với protected
+    protected void onEnable() {}
+    protected void onDisable() {}
     public void onTick() {}
+
+    // Xử lý keybind – sẽ được gọi từ ShibaClient
+    public void tickKeybind(boolean pressed) {
+        if (pressed) {
+            toggle();
+        }
+    }
 }
