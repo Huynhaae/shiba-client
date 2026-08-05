@@ -14,9 +14,18 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(ClientConnection.class)
 public class MixinClientConnection {
 
+    // Flag để tránh vòng lặp: nếu true, không can thiệp vào packet
+    private static boolean isSilentPacket = false;
+
+    public static void setSilentPacket(boolean value) {
+        isSilentPacket = value;
+    }
+
     @ModifyVariable(method = "send", at = @At("HEAD"), argsOnly = true)
     private Packet<?> modifyPacket(Packet<?> packet) {
-        // Chỉ xử lý packet di chuyển có thay đổi góc
+        // Nếu đang gửi packet giả, bỏ qua
+        if (isSilentPacket) return packet;
+
         if (!(packet instanceof PlayerMoveC2SPacket)) return packet;
         PlayerMoveC2SPacket movePacket = (PlayerMoveC2SPacket) packet;
         if (!movePacket.changesLook()) return packet;
@@ -24,13 +33,12 @@ public class MixinClientConnection {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return packet;
 
-        // Ưu tiên AimX trước
+        // Ưu tiên AimX
         AimX aimX = ModuleManager.AIMX;
         if (aimX != null && aimX.isEnabled() && aimX.getMode().equals("Silent")) {
             if (mc.options.attackKey.isPressed() && aimX.getTarget() != null) {
                 float[] angles = aimX.getAimAngles(mc);
                 if (angles != null) {
-                    // Thay packet gốc bằng packet mới với góc nhắm
                     return new PlayerMoveC2SPacket.LookAndOnGround(
                             angles[0],
                             angles[1],
@@ -43,7 +51,6 @@ public class MixinClientConnection {
         // Nếu AimX không bật, thử MaceX
         MaceX maceX = ModuleManager.MACEX;
         if (maceX != null && maceX.isEnabled() && maceX.silentAim.getValue()) {
-            // Kiểm tra MaceX đang có target và đang tấn công
             if (mc.options.attackKey.isPressed()) {
                 float[] angles = maceX.getAimAngles(mc);
                 if (angles != null) {
