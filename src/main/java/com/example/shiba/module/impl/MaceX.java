@@ -15,6 +15,7 @@ import net.minecraft.item.MaceItem;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
@@ -40,22 +41,38 @@ public class MaceX extends Module {
         if (mc.player == null || mc.world == null) return;
         ClientPlayerEntity player = mc.player;
 
-        // AutoAttack: đánh khi rơi (bất kể cầm gì)
-        if (autoAttack.getValue() && player.fallDistance > fallDistance.getValue()) {
+        // Keybind swap elytra
+        if (swapKey.getValue() > 0 && isKeyPressed(swapKey.getValue())) {
+            swapElytraMace(mc);
+        }
+
+        // AutoAttack: chỉ khi rơi và sắp chạm đất
+        if (autoAttack.getValue() && player.fallDistance > fallDistance.getValue() && isAboutToLand(mc)) {
             LivingEntity target = getTarget(mc);
             if (target != null && player.distanceTo(target) <= attackRange.getValue()) {
-                // Silent aim (gửi packet giả)
+                // Nếu không cầm mace, đổi sang mace nếu có
+                if (!isHoldingMace(player)) {
+                    int slot = findMaceSlot(player);
+                    if (slot != -1) {
+                        if (previousSlot == -1) previousSlot = player.getInventory().selectedSlot;
+                        swapToSlot(player, slot);
+                        isUsingMace = true;
+                    } else {
+                        return; // Không có mace, không đánh
+                    }
+                }
+                // Silent aim
                 if (silentAim.getValue()) {
                     sendFakeRotation(mc, target);
                 }
                 mc.interactionManager.attackEntity(player, target);
                 player.swingHand(Hand.MAIN_HAND);
-                player.fallDistance = 0; // reset để không đánh liên tục
+                player.fallDistance = 0;
                 lastAttackTime = System.currentTimeMillis();
             }
         }
 
-        // AutoSwap: đổi sang mace khi tấn công
+        // AutoSwap: đổi sang mace khi tấn công (giữ nguyên)
         if (autoSwap.getValue() && mc.options.attackKey.isPressed()) {
             if (!isHoldingMace(player)) {
                 int slot = findMaceSlot(player);
@@ -72,11 +89,20 @@ public class MaceX extends Module {
                 isUsingMace = false;
             }
         }
+    }
 
-        // Keybind swap elytra
-        if (swapKey.getValue() > 0 && isKeyPressed(swapKey.getValue())) {
-            swapElytraMace(mc);
+    private boolean isAboutToLand(MinecraftClient mc) {
+        ClientPlayerEntity player = mc.player;
+        if (player == null) return false;
+        BlockPos pos = player.getBlockPos();
+        for (int i = 0; i < 3; i++) {
+            BlockPos checkPos = pos.add(0, -i - 1, 0);
+            if (!mc.world.isAir(checkPos)) {
+                double yDist = player.getY() - (pos.getY() - i - 1);
+                return yDist < 1.0 && player.getVelocity().y < -0.1;
+            }
         }
+        return false;
     }
 
     private boolean isKeyPressed(int keyCode) {
@@ -87,48 +113,24 @@ public class MaceX extends Module {
     private void swapElytraMace(MinecraftClient mc) {
         ClientPlayerEntity player = mc.player;
         if (player == null) return;
-
-        // Tìm mace trong hotbar
-        int maceSlot = -1;
+        int maceSlot = -1, elytraSlot = -1;
         for (int i = 0; i < 9; i++) {
-            if (player.getInventory().getStack(i).getItem() instanceof MaceItem) {
-                maceSlot = i;
-                break;
-            }
+            ItemStack stack = player.getInventory().getStack(i);
+            if (stack.getItem() instanceof MaceItem) maceSlot = i;
+            if (stack.getItem() == Items.ELYTRA) elytraSlot = i;
         }
-
-        // Tìm elytra trong hotbar
-        int elytraSlot = -1;
-        for (int i = 0; i < 9; i++) {
-            if (player.getInventory().getStack(i).getItem() == Items.ELYTRA) {
-                elytraSlot = i;
-                break;
-            }
-        }
-
-        // Nếu có cả mace và elytra trong hotbar, swap chúng
         if (maceSlot != -1 && elytraSlot != -1) {
             ItemStack maceStack = player.getInventory().getStack(maceSlot);
             ItemStack elytraStack = player.getInventory().getStack(elytraSlot);
             player.getInventory().setStack(maceSlot, elytraStack);
             player.getInventory().setStack(elytraSlot, maceStack);
-            // Đánh dấu rằng chúng ta đã swap
-            if (player.getInventory().selectedSlot == maceSlot) {
+            if (player.getInventory().selectedSlot == maceSlot)
                 swapToSlot(player, elytraSlot);
-            } else if (player.getInventory().selectedSlot == elytraSlot) {
+            else if (player.getInventory().selectedSlot == elytraSlot)
                 swapToSlot(player, maceSlot);
-            }
-            return;
-        }
-
-        // Nếu chỉ có mace, chuyển sang mace
-        if (maceSlot != -1) {
+        } else if (maceSlot != -1) {
             swapToSlot(player, maceSlot);
-            return;
-        }
-
-        // Nếu chỉ có elytra, chuyển sang elytra
-        if (elytraSlot != -1) {
+        } else if (elytraSlot != -1) {
             swapToSlot(player, elytraSlot);
         }
     }
@@ -137,11 +139,9 @@ public class MaceX extends Module {
         Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
         Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
         Vec3d diff = targetPos.subtract(playerPos);
-
         float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
         float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
         pitch = MathHelper.clamp(pitch, -90, 90);
-
         SilentPacketHelper.setSilentPacket(true);
         mc.player.networkHandler.sendPacket(
                 new net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround())
@@ -155,9 +155,7 @@ public class MaceX extends Module {
 
     private int findMaceSlot(ClientPlayerEntity player) {
         for (int i = 0; i < 9; i++) {
-            if (player.getInventory().getStack(i).getItem() instanceof MaceItem) {
-                return i;
-            }
+            if (player.getInventory().getStack(i).getItem() instanceof MaceItem) return i;
         }
         return -1;
     }
@@ -170,9 +168,7 @@ public class MaceX extends Module {
         HitResult hit = mc.crosshairTarget;
         if (hit != null && hit.getType() == HitResult.Type.ENTITY) {
             EntityHitResult entityHit = (EntityHitResult) hit;
-            if (entityHit.getEntity() instanceof LivingEntity) {
-                return (LivingEntity) entityHit.getEntity();
-            }
+            if (entityHit.getEntity() instanceof LivingEntity) return (LivingEntity) entityHit.getEntity();
         }
         return null;
     }
