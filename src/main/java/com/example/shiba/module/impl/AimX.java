@@ -1,18 +1,15 @@
 package com.example.shiba.module.impl;
 
-import com.example.shiba.util.SilentPacketHelper;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.Category;
 import com.example.shiba.module.settings.NumberSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.BooleanSetting;
-import com.example.shiba.mixin.MixinClientConnection;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -31,10 +28,9 @@ public class AimX extends Module {
     public final NumberSetting legitSpeed = new NumberSetting("LegitSpeed", 1.0, 20.0, 8.0, 0.5);
 
     private LivingEntity target = null;
-    private long lastRotationTime = 0;
 
     public AimX() {
-        super("AimX", "Silent Aim - Không xoay camera", Category.COMBAT);
+        super("AimX", "Aim hỗ trợ (xoay trước khi đánh)", Category.COMBAT);
     }
 
     @Override
@@ -42,55 +38,7 @@ public class AimX extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
         target = findTarget(mc);
-        if (target == null) return;
-
-        String currentMode = mode.getValue();
-        if (currentMode.equals("None")) return;
-
-        // Chỉ xoay khi đang tấn công
-        if (!mc.options.attackKey.isPressed()) return;
-
-        float[] angles = getAimAngles(mc);
-        if (angles == null) return;
-
-        if (currentMode.equals("Silent")) {
-            // Silent: gửi packet giả, không set góc
-            sendFakeRotation(mc, angles[0], angles[1]);
-        } else {
-            // Normal/Legit: set góc thực
-            float targetYaw = angles[0];
-            float targetPitch = angles[1];
-            float currentYaw = mc.player.getYaw();
-            float currentPitch = mc.player.getPitch();
-
-            if (currentMode.equals("Legit")) {
-                float yawDiff = MathHelper.wrapDegrees(targetYaw - currentYaw);
-                float pitchDiff = targetPitch - currentPitch;
-                float maxSpeed = (float) legitSpeed.getValue();
-                if (Math.abs(yawDiff) > maxSpeed) {
-                    targetYaw = currentYaw + Math.signum(yawDiff) * maxSpeed;
-                }
-                if (Math.abs(pitchDiff) > maxSpeed / 2) {
-                    targetPitch = currentPitch + Math.signum(pitchDiff) * maxSpeed / 2;
-                }
-            }
-            mc.player.setYaw(targetYaw);
-            mc.player.setPitch(targetPitch);
-        }
     }
-
-    private void sendFakeRotation(MinecraftClient mc, float yaw, float pitch) {
-    long now = System.currentTimeMillis();
-    if (now - lastRotationTime < 100) return;
-    lastRotationTime = now;
-
-    PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround());
-
-    // Đánh dấu đây là packet giả để mixin bỏ qua
-    SilentPacketHelper.setSilentPacket(true);
-    mc.player.networkHandler.sendPacket(packet);
-    SilentPacketHelper.setSilentPacket(false);
-}
 
     public LivingEntity getTarget() { return target; }
     public String getMode() { return mode.getValue(); }
@@ -133,7 +81,6 @@ public class AimX extends Module {
                     .collect(Collectors.toList());
         }
 
-        // FOV áp dụng cho mọi mode
         float yaw = player.getYaw();
         float pitch = player.getPitch();
         double fovLimit = fov.getValue();
