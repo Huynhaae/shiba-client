@@ -79,18 +79,17 @@ public class AimX extends Module {
     }
 
     private void sendFakeRotation(MinecraftClient mc, float yaw, float pitch) {
-        // Giới hạn tần suất gửi packet (100ms) để tránh spam
-        long now = System.currentTimeMillis();
-        if (now - lastRotationTime < 100) return;
-        lastRotationTime = now;
+    long now = System.currentTimeMillis();
+    if (now - lastRotationTime < 100) return;
+    lastRotationTime = now;
 
-        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround());
+    PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround());
 
-        // Đánh dấu đây là packet giả để mixin bỏ qua
-        MixinClientConnection.setSilentPacket(true);
-        mc.player.networkHandler.sendPacket(packet);
-        MixinClientConnection.setSilentPacket(false);
-    }
+    // Đánh dấu đây là packet giả để mixin bỏ qua
+    SilentPacketHelper.setSilentPacket(true);
+    mc.player.networkHandler.sendPacket(packet);
+    SilentPacketHelper.setSilentPacket(false);
+}
 
     public LivingEntity getTarget() { return target; }
     public String getMode() { return mode.getValue(); }
