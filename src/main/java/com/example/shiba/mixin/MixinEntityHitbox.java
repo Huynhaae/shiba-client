@@ -31,7 +31,6 @@ public class MixinEntityHitbox {
         Box box = cir.getReturnValue();
         if (box == null) return;
 
-        // Mở rộng đúng cách – không lún
         Box expanded = new Box(
             box.minX - w,
             box.minY,
