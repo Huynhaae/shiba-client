@@ -6,7 +6,7 @@
   "mixins": [
     "MixinClientPlayerInteractionManager",
     "MixinEntityHitbox",
-    "MixinWorldRenderer"
+    "MixinChunkRenderer"
   ],
   "client": [],
   "server": [],
