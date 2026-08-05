@@ -147,8 +147,8 @@ public class ModuleSettingsScreen extends Screen {
     }
 
     private Text keybindLabel() {
-        if (module.keyCode == -1) return Text.literal("Keybind: None");
-        String keyName = InputUtil.fromKeyCode(module.keyCode, 0).getLocalizedText().getString();
+        if (module.getKeybind() == -1) return Text.literal("Keybind: None");
+String keyName = InputUtil.fromKeyCode(module.getKeybind(), 0).getLocalizedText().getString();
         return Text.literal("Keybind: " + keyName);
     }
 
