@@ -5,8 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MixinClientPlayerInteractionManager",
-    "MixinEntityHitbox",
-    "MixinClientConnection"
+    "MixinEntityHitbox"
   ],
   "client": [],
   "server": [],
