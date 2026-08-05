@@ -9,7 +9,6 @@ import com.example.shiba.util.SilentPacketHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.MaceItem;
@@ -41,26 +40,26 @@ public class MaceX extends Module {
         if (mc.player == null || mc.world == null) return;
         ClientPlayerEntity player = mc.player;
 
-        // Keybind: đổi elytra thành chestplate và ngược lại
+        // Swap key: đổi elytra <-> chestplate
         if (swapKey.getValue() > 0 && isKeyPressed(swapKey.getValue())) {
             swapElytraChestplate(mc);
         }
 
-        // AutoAttack: chỉ khi rơi và sắp chạm đất
+        // Auto attack khi sắp chạm đất
         if (autoAttack.getValue() && player.fallDistance > fallDistance.getValue() && isAboutToLand(mc)) {
             LivingEntity target = getTarget(mc);
             if (target != null && player.distanceTo(target) <= attackRange.getValue()) {
-                // Nếu chưa cầm mace, đổi sang mace (hoán đổi item trong hotbar)
+                // Đổi sang mace nếu chưa cầm
                 if (!isHoldingMace(player)) {
                     int slot = findMaceSlot(player);
                     if (slot != -1) {
                         if (previousSlot == -1) previousSlot = player.getInventory().selectedSlot;
                         swapItemSlots(player, slot, player.getInventory().selectedSlot);
                     } else {
-                        return; // Không có mace
+                        return;
                     }
                 }
-                // Đánh
+                // Silent aim
                 if (silentAim.getValue()) {
                     sendFakeRotation(mc, target);
                 }
@@ -79,15 +78,15 @@ public class MaceX extends Module {
         }
     }
 
-    // === Swap elytra ↔ chestplate ===
+    // Hoán đổi elytra đang mặc với chestplate trong inventory
     private void swapElytraChestplate(MinecraftClient mc) {
         ClientPlayerEntity player = mc.player;
         if (player == null) return;
 
-        ItemStack chestSlot = player.getInventory().armor.get(2); // slot chestplate (index 2)
+        ItemStack chestSlot = player.getInventory().armor.get(2); // slot chest
 
         if (chestSlot.getItem() == Items.ELYTRA) {
-            // Đang mặc elytra → tìm chestplate để mặc
+            // Đang mặc elytra → tìm chestplate trong inventory
             int chestplateSlot = findItemSlot(player, Items.NETHERITE_CHESTPLATE);
             if (chestplateSlot == -1) chestplateSlot = findItemSlot(player, Items.DIAMOND_CHESTPLATE);
             if (chestplateSlot == -1) chestplateSlot = findItemSlot(player, Items.IRON_CHESTPLATE);
@@ -95,38 +94,28 @@ public class MaceX extends Module {
             if (chestplateSlot == -1) chestplateSlot = findItemSlot(player, Items.CHAINMAIL_CHESTPLATE);
             if (chestplateSlot == -1) chestplateSlot = findItemSlot(player, Items.LEATHER_CHESTPLATE);
             if (chestplateSlot != -1) {
-                // Lấy chestplate ra, bỏ elytra vào slot đó
                 ItemStack chestplate = player.getInventory().getStack(chestplateSlot);
                 player.getInventory().armor.set(2, chestplate);
                 player.getInventory().setStack(chestplateSlot, new ItemStack(Items.ELYTRA));
-                // Cập nhật equipment (client-side)
-                player.sendEquipmentChanges();
             }
         } else {
-            // Đang mặc chestplate → tìm elytra để mặc
+            // Đang mặc chestplate → tìm elytra
             int elytraSlot = findItemSlot(player, Items.ELYTRA);
             if (elytraSlot != -1) {
                 ItemStack elytra = player.getInventory().getStack(elytraSlot);
                 player.getInventory().armor.set(2, elytra);
                 player.getInventory().setStack(elytraSlot, chestSlot);
-                player.sendEquipmentChanges();
             }
         }
     }
 
-    // Tìm slot chứa item trong hotbar + inventory (ưu tiên hotbar)
+    // Tìm slot chứa item trong inventory (ưu tiên hotbar)
     private int findItemSlot(ClientPlayerEntity player, net.minecraft.item.Item item) {
-        // Ưu tiên hotbar (0-8)
         for (int i = 0; i < 9; i++) {
-            if (player.getInventory().getStack(i).getItem() == item) {
-                return i;
-            }
+            if (player.getInventory().getStack(i).getItem() == item) return i;
         }
-        // Nếu không có trong hotbar, tìm trong toàn bộ inventory (9-35)
         for (int i = 9; i < 36; i++) {
-            if (player.getInventory().getStack(i).getItem() == item) {
-                return i;
-            }
+            if (player.getInventory().getStack(i).getItem() == item) return i;
         }
         return -1;
     }
@@ -138,7 +127,6 @@ public class MaceX extends Module {
         ItemStack stack2 = player.getInventory().getStack(slot2);
         player.getInventory().setStack(slot1, stack2);
         player.getInventory().setStack(slot2, stack1);
-        // Cập nhật selected slot nếu cần
         if (player.getInventory().selectedSlot == slot1) {
             player.getInventory().selectedSlot = slot2;
         } else if (player.getInventory().selectedSlot == slot2) {
