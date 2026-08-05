@@ -53,9 +53,9 @@ public class ShibaClient implements ClientModInitializer {
             if (client.currentScreen == null) {
                 long handle = client.getWindow().getHandle();
                 for (Module m : ModuleManager.getModules()) {
-                    if (m.keyCode != -1) {
-                        boolean down = InputUtil.isKeyPressed(handle, m.keyCode);
-                        m.tickKeybind(down);
+                    if (m.getKeybind() != -1) {
+    boolean down = InputUtil.isKeyPressed(handle, m.getKeybind());
+    m.tickKeybind(down);
                     }
                 }
             }
