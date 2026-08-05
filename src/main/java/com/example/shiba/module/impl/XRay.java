@@ -7,7 +7,6 @@ import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.NumberSetting;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.util.registry.Registry;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +23,6 @@ public class XRay extends Module {
     public final BooleanSetting showWood = new BooleanSetting("ShowWood", false);
 
     private Set<Block> visibleBlocks = new HashSet<>();
-    private boolean wasEnabled = false;
 
     public XRay() {
         super("XRay", "Nhìn xuyên block (client-side)", Category.RENDER);
@@ -34,7 +32,6 @@ public class XRay extends Module {
     public void onEnable() {
         super.onEnable();
         updateVisibleBlocks();
-        // Yêu cầu render lại toàn bộ thế giới
         if (mc.world != null) {
             mc.worldRenderer.reload();
         }
@@ -43,7 +40,6 @@ public class XRay extends Module {
     @Override
     public void onDisable() {
         super.onDisable();
-        // Khôi phục render bình thường
         visibleBlocks.clear();
         if (mc.world != null) {
             mc.worldRenderer.reload();
@@ -52,8 +48,7 @@ public class XRay extends Module {
 
     @Override
     public void onTick() {
-        // Cập nhật danh sách block nếu có thay đổi setting
-        if (!visibleBlocks.isEmpty() || isEnabled()) {
+        if (isEnabled()) {
             updateVisibleBlocks();
         }
     }
@@ -69,12 +64,10 @@ public class XRay extends Module {
 
         String modeValue = mode.getValue();
 
-        // Ores
         if (modeValue.equals("Ores") || modeValue.equals("All") || showOres.getValue()) {
             addOres();
         }
 
-        // Chests & Spawners
         if (showChests.getValue()) {
             visibleBlocks.add(Blocks.CHEST);
             visibleBlocks.add(Blocks.TRAPPED_CHEST);
@@ -105,7 +98,6 @@ public class XRay extends Module {
             visibleBlocks.add(Blocks.VAULT);
         }
 
-        // Stone, Dirt, Wood (tùy chọn)
         if (showStone.getValue()) {
             visibleBlocks.add(Blocks.STONE);
             visibleBlocks.add(Blocks.COBBLESTONE);
@@ -147,8 +139,6 @@ public class XRay extends Module {
             visibleBlocks.add(Blocks.MANGROVE_WOOD);
             visibleBlocks.add(Blocks.CHERRY_WOOD);
         }
-
-        // Nếu mode là "All" hoặc "Ores", đã có ores từ addOres()
     }
 
     private void addOres() {
