@@ -38,12 +38,10 @@ public class MaceX extends Module {
         if (mc.player == null || mc.world == null) return;
         ClientPlayerEntity player = mc.player;
 
-        // Swap key
         if (swapKey.getValue() > 0 && isKeyPressed(swapKey.getValue())) {
             swapElytraChestplate(mc);
         }
 
-        // Đổi lại slot sau khi đánh (nếu autoSwap bật)
         if (autoSwap.getValue() && previousSlot != -1 && !mc.options.attackKey.isPressed()) {
             if (isHoldingMace(player)) {
                 int currentSlot = player.getInventory().selectedSlot;
@@ -53,7 +51,7 @@ public class MaceX extends Module {
         }
     }
 
-    // === Phương thức public để mixin gọi ===
+    // === Public methods for mixin ===
     public boolean isAboutToLand(MinecraftClient mc) {
         ClientPlayerEntity player = mc.player;
         if (player == null) return false;
@@ -138,31 +136,6 @@ public class MaceX extends Module {
     private boolean isKeyPressed(int keyCode) {
         long handle = MinecraftClient.getInstance().getWindow().getHandle();
         return org.lwjgl.glfw.GLFW.glfwGetKey(handle, keyCode) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-    }
-
-    // Silent aim cho MaceX (nếu cần)
-    public float[] getAimAngles(MinecraftClient mc) {
-        if (!silentAim.getValue()) return null;
-        LivingEntity target = getTarget(mc);
-        if (target == null) return null;
-        Vec3d targetPos = target.getPos().add(0, target.getHeight() / 2, 0);
-        Vec3d playerPos = mc.player.getPos().add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
-        Vec3d diff = targetPos.subtract(playerPos);
-        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90);
-        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z))));
-        pitch = MathHelper.clamp(pitch, -90, 90);
-        return new float[]{yaw, pitch};
-    }
-
-    private LivingEntity getTarget(MinecraftClient mc) {
-        HitResult hit = mc.crosshairTarget;
-        if (hit != null && hit.getType() == HitResult.Type.ENTITY) {
-            EntityHitResult entityHit = (EntityHitResult) hit;
-            if (entityHit.getEntity() instanceof LivingEntity) {
-                return (LivingEntity) entityHit.getEntity();
-            }
-        }
-        return null;
     }
 
     @Override
