@@ -188,9 +188,9 @@ String keyName = InputUtil.fromKeyCode(module.getKeybind(), 0).getLocalizedText(
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (awaitingKeybind) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                module.keyCode = -1;
+                module.setKeybind(-1);
             } else {
-                module.keyCode = keyCode;
+                module.setKeybind(keyCode);
             }
             awaitingKeybind = false;
             keybindButton.setMessage(keybindLabel());
