@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class XRay extends Module {
-    // Settings
     public final ModeSetting mode = new ModeSetting("Mode", "Ores", "Ores", "All", "Custom");
     public final NumberSetting opacity = new NumberSetting("Opacity", 0.0, 1.0, 0.5, 0.05);
     public final BooleanSetting showChests = new BooleanSetting("ShowChests", true);
@@ -168,6 +167,6 @@ public class XRay extends Module {
     }
 
     public float getOpacity() {
-        return (float) opacity.getValue(); // sửa lỗi
+        return (float) opacity.getValue();
     }
 }
