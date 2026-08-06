@@ -97,7 +97,40 @@ public class ShibaClient implements ClientModInitializer {
             if (esp.isEnabled()) {
                 renderEspThroughWalls(mc, camPos, esp.range);
             }
+
+            var xray = ModuleManager.XRAYX;
+            if (xray.isEnabled()) {
+                renderXrayOres(mc, camPos, xray);
+            }
         });
+    }
+
+    private void renderXrayOres(MinecraftClient mc, Vec3d camPos, com.example.shiba.module.impl.XrayX xray) {
+        var ores = xray.getFoundOres();
+        if (ores.isEmpty()) return;
+
+        Matrix4f matrix = new Matrix4f();
+
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.disableCull();
+        RenderSystem.lineWidth(2.0F);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
+
+        for (net.minecraft.util.math.BlockPos pos : ores) {
+            Box box = new Box(pos).offset(-camPos.x, -camPos.y, -camPos.z);
+            addBoxLines(buffer, matrix, box, 1.0F, 0.85F, 0.1F, 0.9F);
+        }
+
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
+
+        RenderSystem.enableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
     }
 
     private void renderEspThroughWalls(MinecraftClient mc, Vec3d camPos, double range) {
