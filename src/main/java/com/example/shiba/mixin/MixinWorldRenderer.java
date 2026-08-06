@@ -3,23 +3,31 @@ package com.example.shiba.mixin;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.XRay;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.world.BlockRenderView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
 public class MixinWorldRenderer {
 
-    @ModifyVariable(method = "render", at = @At("STORE"), ordinal = 0)
-    private BlockState modifyBlockState(BlockState state) {
+    @Inject(
+        method = "renderBlock",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onRenderBlock(BlockState state, BlockPos pos, BlockRenderView world, MatrixStack matrix, VertexConsumer vertexConsumer, boolean cull, Random random, CallbackInfo ci) {
         XRay xray = ModuleManager.XRAY;
         if (xray != null && xray.isEnabled()) {
             if (!xray.shouldRenderBlock(state.getBlock())) {
-                return Blocks.AIR.getDefaultState();
+                ci.cancel();
             }
         }
-        return state;
     }
 }
