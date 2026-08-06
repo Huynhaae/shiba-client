@@ -6,7 +6,9 @@ import com.example.shiba.module.settings.BooleanSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.NumberSetting;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -37,7 +39,6 @@ public class AutoCartX extends Module {
 
         ClientPlayerEntity player = mc.player;
 
-        // Kiểm tra điều kiện bắn
         boolean isShooting = false;
         String currentMode = mode.getValue();
         if (currentMode.equals("Both") || currentMode.equals("Bow")) {
@@ -53,12 +54,10 @@ public class AutoCartX extends Module {
 
         if (!isShooting) return;
 
-        // Giới hạn tốc độ
         long now = System.currentTimeMillis();
         long delay = (long) (1000.0 / speed.getValue());
         if (now - lastActionTime < delay) return;
 
-        // Tính vị trí đặt
         Vec3d start = player.getEyePos();
         Vec3d lookVec = player.getRotationVec(1.0f);
         Vec3d end = start.add(lookVec.multiply(range.getValue()));
@@ -75,18 +74,22 @@ public class AutoCartX extends Module {
         if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
             placePos = hit.getBlockPos().offset(hit.getSide());
         } else {
-            BlockPos target = player.getBlockPos().add((int) lookVec.x * (int) range.getValue(), (int) lookVec.y * (int) range.getValue(), (int) lookVec.z * (int) range.getValue());
+            BlockPos target = player.getBlockPos().add(
+                    (int) lookVec.x * (int) range.getValue(),
+                    (int) lookVec.y * (int) range.getValue(),
+                    (int) lookVec.z * (int) range.getValue()
+            );
             placePos = target;
         }
 
         if (placePos == null) return;
 
-        // 1. Đặt đường ray
+        // Đặt đường ray
         if (placeRail.getValue() && mc.world.getBlockState(placePos).isAir()) {
-            placeBlock(mc, placePos, Blocks.RAIL.getDefaultState());
+            placeBlock(mc, placePos);
         }
 
-        // 2. Đặt TNT cart
+        // Đặt TNT cart
         if (placeTntCart.getValue()) {
             BlockPos cartPos = placePos.up();
             if (mc.world.getBlockState(cartPos).isAir()) {
@@ -103,15 +106,13 @@ public class AutoCartX extends Module {
             }
         }
 
-        // 3. Quẹt lửa (chỉ khi bắn bằng nỏ hoặc mode Both)
+        // Quẹt lửa (chỉ với nỏ)
         if (autoLight.getValue() && (currentMode.equals("Crossbow") || currentMode.equals("Both"))) {
-            // Kiểm tra đang cầm nỏ
             if (player.getMainHandStack().getItem() == Items.CROSSBOW || currentMode.equals("Crossbow")) {
                 int flintSlot = findItemSlot(player, Items.FLINT_AND_STEEL);
                 if (flintSlot != -1) {
                     int prevSlot = player.getInventory().selectedSlot;
                     swapToSlot(player, flintSlot);
-                    // Đốt block ở phía trước TNT cart (không đốt TNT cart)
                     BlockPos lightPos = placePos.offset(player.getHorizontalFacing(), 1);
                     if (mc.world.getBlockState(lightPos).isAir()) {
                         mc.interactionManager.interactBlock(
@@ -127,7 +128,7 @@ public class AutoCartX extends Module {
         lastActionTime = now;
     }
 
-    private void placeBlock(MinecraftClient mc, BlockPos pos, BlockState state) {
+    private void placeBlock(MinecraftClient mc, BlockPos pos) {
         int slot = findItemSlot(mc.player, Items.RAIL);
         if (slot != -1) {
             int prevSlot = mc.player.getInventory().selectedSlot;
