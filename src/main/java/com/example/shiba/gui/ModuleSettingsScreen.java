@@ -121,9 +121,11 @@ public class ModuleSettingsScreen extends Screen {
                     v -> aura.attackDelayTicks = v, v -> "Delay: " + String.format("%.0f ticks", v));
         }
 
-        if (module instanceof ESP esp) {
-            y = addSlider(y, rowX, rowW, esp.range, 5000.0,
-                    v -> esp.range = v, v -> "Range: " + String.format("%.0f", v));
+        if (module instanceof com.example.shiba.module.impl.XrayX xray) {
+            y = addSlider(y, rowX, rowW, xray.range, 64.0,
+                    v -> xray.range = (int) v, v -> "Range: " + String.format("%.0f", v));
+            y = addSlider(y, rowX, rowW, xray.rescanIntervalTicks, 100.0,
+                    v -> xray.rescanIntervalTicks = (int) v, v -> "Rescan: " + String.format("%.0f ticks", v));
         }
 
         keybindButton = ButtonWidget.builder(
