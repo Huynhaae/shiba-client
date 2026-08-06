@@ -4,10 +4,9 @@
   "package": "com.example.shiba.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "MixinBlockRenderDispatcher",
+    "MixinWorldRenderer",
     "MixinClientPlayerInteractionManager",
     "MixinEntityHitbox",
-    "MixinChunkRenderer"
   ],
   "client": [],
   "server": [],
