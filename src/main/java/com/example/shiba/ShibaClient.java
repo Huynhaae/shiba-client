@@ -5,6 +5,7 @@ import com.example.shiba.gui.ClickGuiScreen;
 import com.example.shiba.module.Module;
 import com.example.shiba.module.ModuleManager;
 import com.example.shiba.module.impl.Hitbox;
+import com.example.shiba.module.impl.XrayX;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -27,11 +28,16 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ShibaClient implements ClientModInitializer {
     public static final String MOD_ID = "shiba";
     public static final String MOD_NAME = "Shiba";
 
     public static KeyBinding openMenuKey;
+
+    private final Map<Module, Boolean> keyWasDown = new HashMap<>();
 
     @Override
     public void onInitializeClient() {
@@ -53,9 +59,13 @@ public class ShibaClient implements ClientModInitializer {
             if (client.currentScreen == null) {
                 long handle = client.getWindow().getHandle();
                 for (Module m : ModuleManager.getModules()) {
-                    if (m.getKeybind() != -1) {
-    boolean down = InputUtil.isKeyPressed(handle, m.getKeybind());
-    m.tickKeybind(down);
+                    if (m.getKeybind() != 0) {
+                        boolean down = InputUtil.isKeyPressed(handle, m.getKeybind());
+                        boolean wasDown = keyWasDown.getOrDefault(m, false);
+                        if (down && !wasDown) {
+                            m.tickKeybind(true);
+                        }
+                        keyWasDown.put(m, down);
                     }
                 }
             }
@@ -105,48 +115,6 @@ public class ShibaClient implements ClientModInitializer {
         });
     }
 
-   private void renderXrayOres(MinecraftClient mc, Vec3d camPos, XrayX xray) {
-        var ores = xray.getFoundOres();
-        if (ores.isEmpty()) return;
-
-        Matrix4f matrix = new Matrix4f();
-
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.disableCull();
-        RenderSystem.lineWidth(2.0F);
-
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-
-        for (var ore : ores) {
-            Box box = new Box(ore.pos()).offset(-camPos.x, -camPos.y, -camPos.z);
-            addBoxLines(buffer, matrix, box, ore.r(), ore.g(), ore.b(), 0.9F);
-        }
-
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
-    }
-
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
-    }
-
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
-    }
-
     private void renderEspThroughWalls(MinecraftClient mc, Vec3d camPos, double range) {
         Matrix4f matrix = new Matrix4f();
 
@@ -175,6 +143,34 @@ public class ShibaClient implements ClientModInitializer {
         if (any) {
             BufferRenderer.drawWithGlobalProgram(buffer.end());
         }
+
+        RenderSystem.enableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
+    }
+
+    private void renderXrayOres(MinecraftClient mc, Vec3d camPos, XrayX xray) {
+        var ores = xray.getFoundOres();
+        if (ores.isEmpty()) return;
+
+        Matrix4f matrix = new Matrix4f();
+
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.disableCull();
+        RenderSystem.lineWidth(2.0F);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
+
+        for (var ore : ores) {
+            Box box = new Box(ore.pos()).offset(-camPos.x, -camPos.y, -camPos.z);
+            addBoxLines(buffer, matrix, box, ore.r(), ore.g(), ore.b(), 0.9F);
+        }
+
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
 
         RenderSystem.enableCull();
         RenderSystem.enableDepthTest();
