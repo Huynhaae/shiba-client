@@ -1,5 +1,6 @@
 package com.example.shiba.module;
 
+import com.example.shiba.module.impl.AutoCartX;
 import com.example.shiba.module.impl.XrayX;
 import com.example.shiba.module.impl.AimX;
 import com.example.shiba.module.impl.Aura;
@@ -22,6 +23,7 @@ import java.util.List;
 public final class ModuleManager {
     private static final List<Module> MODULES = new ArrayList<>();
 
+    public static final AutoCartX AUTOCARTX = register(new AutoCartX());
     public static final XrayX XRAYX = register(new XrayX());
     public static final CoordsHud COORDS = register(new CoordsHud());
     public static final FpsHud FPS = register(new FpsHud());
