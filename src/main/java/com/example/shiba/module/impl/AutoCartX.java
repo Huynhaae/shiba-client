@@ -29,7 +29,7 @@ public class AutoCartX extends Module {
     private long lastActionTime = 0;
 
     public AutoCartX() {
-        super("AutoCartX", "Tự động đặt đường ray, TNT cart và quẹt lửa", Category.MISC);
+        super("AutoCartX", "Tự động đặt đường ray, TNT cart và quẹt lửa", Category.RENDER);
     }
 
     @Override
