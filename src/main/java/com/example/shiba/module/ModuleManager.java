@@ -1,6 +1,5 @@
 package com.example.shiba.module;
 
-import com.example.shiba.module.impl.XRay;
 import com.example.shiba.module.impl.AimX;
 import com.example.shiba.module.impl.Aura;
 import com.example.shiba.module.impl.CoordsHud;
@@ -22,7 +21,6 @@ import java.util.List;
 public final class ModuleManager {
     private static final List<Module> MODULES = new ArrayList<>();
 
-    public static final XRay XRAY = register(new XRay());
     public static final CoordsHud COORDS = register(new CoordsHud());
     public static final FpsHud FPS = register(new FpsHud());
     public static final Zoom ZOOM = register(new Zoom());
