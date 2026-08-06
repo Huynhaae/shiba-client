@@ -105,7 +105,7 @@ public class ShibaClient implements ClientModInitializer {
         });
     }
 
-   private void renderXrayOres(MinecraftClient mc, Vec3d camPos, com.example.shiba.module.impl.XrayX xray) {
+   private void renderXrayOres(MinecraftClient mc, Vec3d camPos, XrayX xray) {
         var ores = xray.getFoundOres();
         if (ores.isEmpty()) return;
 
@@ -125,6 +125,13 @@ public class ShibaClient implements ClientModInitializer {
             Box box = new Box(ore.pos()).offset(-camPos.x, -camPos.y, -camPos.z);
             addBoxLines(buffer, matrix, box, ore.r(), ore.g(), ore.b(), 0.9F);
         }
+
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
+
+        RenderSystem.enableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
+    }
 
         BufferRenderer.drawWithGlobalProgram(buffer.end());
 
