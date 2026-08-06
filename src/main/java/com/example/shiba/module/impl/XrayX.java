@@ -85,8 +85,8 @@ public class XrayX extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
 
-        foundOres.clear();
         BlockPos center = mc.player.getBlockPos();
+        List<OreEntry> scanned = new ArrayList<>();
 
         for (int x = -range; x <= range; x++) {
             for (int y = -range; y <= range; y++) {
@@ -95,11 +95,22 @@ public class XrayX extends Module {
                     Block block = mc.world.getBlockState(pos).getBlock();
                     float[] color = ORE_COLORS.get(block);
                     if (color != null) {
-                        foundOres.add(new OreEntry(pos, color[0], color[1], color[2]));
-                        if (foundOres.size() > 400) return;
+                        scanned.add(new OreEntry(pos, color[0], color[1], color[2]));
                     }
                 }
             }
+        }
+
+        scanned.sort((a, b) -> {
+            double da = a.pos().getSquaredDistance(center);
+            double db = b.pos().getSquaredDistance(center);
+            return Double.compare(da, db);
+        });
+
+        foundOres.clear();
+        int limit = Math.min(scanned.size(), 400);
+        for (int i = 0; i < limit; i++) {
+            foundOres.add(scanned.get(i));
         }
     }
 
