@@ -6,12 +6,10 @@ import com.example.shiba.module.settings.BooleanSetting;
 import com.example.shiba.module.settings.KeybindSetting;
 import com.example.shiba.module.settings.ModeSetting;
 import com.example.shiba.module.settings.NumberSetting;
-import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -34,7 +32,7 @@ public class AutoCartX extends Module {
     private boolean wasPressed = false;
 
     public AutoCartX() {
-        super("AutoCartX", "Tự động đặt đường ray, TNT cart và quẹt lửa", Category.MISC);
+        super("AutoCartX", "Tự động đặt đường ray, TNT cart và quẹt lửa", Category.COMBAT);
     }
 
     @Override
@@ -54,18 +52,17 @@ public class AutoCartX extends Module {
         // Kiểm tra vũ khí
         boolean isValidWeapon = false;
         String currentMode = mode.getValue();
-        ItemStack mainHand = player.getMainHandStack();
 
         if (currentMode.equals("Both") || currentMode.equals("Bow")) {
-            if (mainHand.getItem() == Items.BOW) isValidWeapon = true;
+            if (player.getMainHandStack().getItem() == Items.BOW) isValidWeapon = true;
         }
         if (currentMode.equals("Both") || currentMode.equals("Crossbow")) {
-            if (mainHand.getItem() == Items.CROSSBOW) isValidWeapon = true;
+            if (player.getMainHandStack().getItem() == Items.CROSSBOW) isValidWeapon = true;
         }
 
         if (!isValidWeapon) return;
 
-        // Chỉ hành động khi nhấn phím lần đầu (không giữ liên tục)
+        // Chỉ hành động khi nhấn phím lần đầu
         if (wasPressed) return;
         wasPressed = true;
 
@@ -78,9 +75,11 @@ public class AutoCartX extends Module {
         BlockPos placePos = getPlacePos(mc);
         if (placePos == null) return;
 
+        System.out.println("[AutoCartX] Placing at: " + placePos);
+
         // 1. Đặt đường ray
         if (placeRail.getValue()) {
-            placeBlock(mc, placePos, Blocks.RAIL);
+            placeBlock(mc, placePos);
         }
 
         // 2. Đặt TNT cart
@@ -91,8 +90,8 @@ public class AutoCartX extends Module {
             }
         }
 
-        // 3. Quẹt lửa (nếu bắn bằng nỏ hoặc mode Both)
-        if (autoLight.getValue() && (currentMode.equals("Crossbow") || currentMode.equals("Both"))) {
+        // 3. Quẹt lửa
+        if (autoLight.getValue()) {
             Direction facing = player.getHorizontalFacing();
             BlockPos lightPos = placePos.offset(facing, 1);
             if (mc.world.getBlockState(lightPos).isAir()) {
@@ -125,24 +124,25 @@ public class AutoCartX extends Module {
             return target.offset(hit.getSide());
         }
 
-        // Nếu không có block, đặt tại vị trí target theo hướng nhìn
         BlockPos pos = player.getBlockPos();
         return pos.add((int) lookVec.x * (int) range.getValue(),
                        (int) lookVec.y * (int) range.getValue(),
                        (int) lookVec.z * (int) range.getValue());
     }
 
-    private void placeBlock(MinecraftClient mc, BlockPos pos, Block block) {
+    private void placeBlock(MinecraftClient mc, BlockPos pos) {
         if (mc.player == null) return;
         if (!mc.world.getBlockState(pos).isAir()) return;
 
         int slot = findItemSlot(mc.player, Items.RAIL);
-        if (slot == -1) return;
+        if (slot == -1) {
+            System.out.println("[AutoCartX] No rail in hotbar!");
+            return;
+        }
 
         int prevSlot = mc.player.getInventory().selectedSlot;
         mc.player.getInventory().selectedSlot = slot;
 
-        // Gửi packet click chuột phải để đặt block
         mc.interactionManager.interactBlock(
                 mc.player,
                 Hand.MAIN_HAND,
@@ -150,6 +150,7 @@ public class AutoCartX extends Module {
         );
 
         mc.player.getInventory().selectedSlot = prevSlot;
+        System.out.println("[AutoCartX] Placed rail");
     }
 
     private void placeItem(MinecraftClient mc, BlockPos pos, Item item) {
@@ -157,12 +158,14 @@ public class AutoCartX extends Module {
         if (!mc.world.getBlockState(pos).isAir()) return;
 
         int slot = findItemSlot(mc.player, item);
-        if (slot == -1) return;
+        if (slot == -1) {
+            System.out.println("[AutoCartX] No " + item.getName().getString() + " in hotbar!");
+            return;
+        }
 
         int prevSlot = mc.player.getInventory().selectedSlot;
         mc.player.getInventory().selectedSlot = slot;
 
-        // Dùng item (đặt TNT cart hoặc quẹt lửa)
         mc.interactionManager.interactBlock(
                 mc.player,
                 Hand.MAIN_HAND,
@@ -170,6 +173,7 @@ public class AutoCartX extends Module {
         );
 
         mc.player.getInventory().selectedSlot = prevSlot;
+        System.out.println("[AutoCartX] Placed " + item.getName().getString());
     }
 
     private int findItemSlot(ClientPlayerEntity player, Item item) {
@@ -189,5 +193,6 @@ public class AutoCartX extends Module {
         super.onEnable();
         wasPressed = false;
         lastActionTime = 0;
+        System.out.println("[AutoCartX] Enabled!");
     }
 }
